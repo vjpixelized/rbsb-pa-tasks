@@ -139,6 +139,17 @@ h1 {
   white-space: nowrap;
 }
 
+.clear-pa-btn {
+  min-width: 62px;
+  padding: 0 11px;
+  border: 1px solid rgba(180, 35, 24, 0.28);
+  border-radius: 8px;
+  background: rgba(180, 35, 24, 0.1);
+  color: var(--danger);
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
 .sync-pill {
   display: flex;
   align-items: center;
