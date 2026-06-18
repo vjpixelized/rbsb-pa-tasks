@@ -344,10 +344,8 @@
 
     if (state.client) {
       var payload = missing.map(stripLocalOnly);
-      var result = await state.client
-        .from(state.table)
-        .upsert(payload, { onConflict: "work_date,fixed_key", ignoreDuplicates: true });
-      if (result.error) {
+      var result = await state.client.from(state.table).insert(payload);
+      if (result.error && result.error.code !== "23505") {
         console.error(result.error);
         setSyncState("error", "Error");
       }
