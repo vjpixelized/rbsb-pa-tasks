@@ -425,7 +425,7 @@ textarea:focus {
 
 .task-actions {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 7px;
   padding: 0 13px 13px;
 }
@@ -457,6 +457,12 @@ textarea:focus {
   border-color: rgba(199, 119, 0, 0.28);
   background: rgba(199, 119, 0, 0.12);
   color: var(--blocked);
+}
+
+.task-actions button.danger {
+  border-color: rgba(180, 35, 24, 0.28);
+  background: rgba(180, 35, 24, 0.1);
+  color: var(--danger);
 }
 
 .empty-state {
