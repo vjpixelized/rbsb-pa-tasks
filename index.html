@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#111827">
+  <title>Hacienda PA Tasks</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="title-block">
+        <p class="eyebrow">Hacienda</p>
+        <h1>PA Tasks</h1>
+        <p id="dateLine" class="date-line">Cargando...</p>
+      </div>
+      <button id="refreshBtn" class="icon-btn" type="button" aria-label="Actualizar tareas" title="Actualizar">
+        <span aria-hidden="true">↻</span>
+      </button>
+    </header>
+
+    <section class="operator-panel">
+      <button id="paButton" class="pa-button" type="button">
+        <span class="pa-label">PA activo</span>
+        <strong id="currentPa">Seleccionar nombre</strong>
+      </button>
+      <div id="syncState" class="sync-pill local">Modo local</div>
+    </section>
+
+    <main>
+      <section class="summary-band" aria-label="Resumen">
+        <div class="summary-cell pending">
+          <span id="pendingCount">0</span>
+          <small>Pendientes</small>
+        </div>
+        <div class="summary-cell active">
+          <span id="activeCount">0</span>
+          <small>En proceso</small>
+        </div>
+        <div class="summary-cell blocked">
+          <span id="blockedCount">0</span>
+          <small>Seguimiento</small>
+        </div>
+        <div class="summary-cell done">
+          <span id="doneCount">0</span>
+          <small>Listas</small>
+        </div>
+      </section>
+
+      <section class="add-task-panel">
+        <form id="addTaskForm">
+          <div class="field-stack">
+            <label for="newTaskTitle">Nuevo pendiente</label>
+            <input id="newTaskTitle" type="text" autocomplete="off" placeholder="Ej. Llevar extensión al área de fans">
+          </div>
+          <div class="add-row">
+            <select id="newTaskArea" aria-label="Área">
+              <option value="Control Room">Control Room</option>
+              <option value="Driveway">Driveway</option>
+              <option value="Production Office">Production Office</option>
+              <option value="Catering">Catering</option>
+              <option value="Audio Garage">Audio Garage</option>
+              <option value="Otro">Otro</option>
+            </select>
+            <button type="submit">Agregar</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="toolbar" aria-label="Filtros">
+        <div class="filter-row">
+          <button class="filter-btn active" type="button" data-filter="all">Todo</button>
+          <button class="filter-btn" type="button" data-filter="pending">Pendiente</button>
+          <button class="filter-btn" type="button" data-filter="active">Proceso</button>
+          <button class="filter-btn" type="button" data-filter="blocked">Seguimiento</button>
+          <button class="filter-btn" type="button" data-filter="done">Listo</button>
+        </div>
+        <input id="searchInput" class="search-input" type="search" autocomplete="off" placeholder="Buscar tarea, área, PA o nota">
+      </section>
+
+      <section id="taskList" class="task-list" aria-live="polite"></section>
+    </main>
+  </div>
+
+  <div id="paModal" class="modal" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="paModalTitle">
+      <div class="modal-head">
+        <h2 id="paModalTitle">Seleccionar PA</h2>
+        <button class="plain-btn" type="button" data-close-modal="paModal">Cerrar</button>
+      </div>
+      <div id="paList" class="pa-list"></div>
+    </div>
+  </div>
+
+  <div id="noteModal" class="modal" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="noteModalTitle">
+      <div class="modal-head">
+        <h2 id="noteModalTitle">Nota de tarea</h2>
+        <button class="plain-btn" type="button" data-close-modal="noteModal">Cerrar</button>
+      </div>
+      <form id="noteForm">
+        <p id="noteTaskTitle" class="note-target"></p>
+        <label for="noteText">Nota</label>
+        <textarea id="noteText" rows="5" placeholder="Ej. Se terminó, pero faltó una extensión para conectar el ventilador."></textarea>
+        <div class="modal-actions">
+          <button id="saveNoteBtn" type="submit">Guardar nota</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="./supabase-config.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>
