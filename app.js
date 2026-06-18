@@ -425,6 +425,17 @@
 
     if (!requirePa()) return;
 
+    if (action === "delete") {
+      if (task.fixed_key) {
+        alert("Las tareas fijas del checklist no se borran. Puedes marcarlas como seguimiento si no aplican.");
+        return;
+      }
+      var confirmed = window.confirm("¿Borrar esta tarea? Esta acción no se puede deshacer.");
+      if (!confirmed) return;
+      await deleteTask(id);
+      return;
+    }
+
     if (action === "take") {
       await patchTask(id, {
         status: "active",
@@ -517,6 +528,25 @@
     state.tasks = state.tasks.map(function (task) {
       if (task.id !== id) return task;
       return normalizeTask(Object.assign({}, task, patch));
+    });
+    saveLocalTasks();
+    render();
+  }
+
+  async function deleteTask(id) {
+    if (state.client) {
+      var result = await state.client.from(state.table).delete().eq("id", id);
+      if (result.error) {
+        console.error(result.error);
+        alert("No se pudo borrar. Falta activar el permiso de borrado en Supabase.");
+        return;
+      }
+      await loadTasks();
+      return;
+    }
+
+    state.tasks = state.tasks.filter(function (task) {
+      return task.id !== id;
     });
     saveLocalTasks();
     render();
@@ -664,6 +694,10 @@
       buttons.push(actionButton("reopen", id, "Reabrir", "primary"));
       buttons.push(actionButton("blocked", id, "Seguimiento", "warning"));
       buttons.push(actionButton("note", id, "Nota", ""));
+    }
+
+    if (!task.fixed_key) {
+      buttons.push(actionButton("delete", id, "Borrar", "danger"));
     }
 
     return '<div class="task-actions">' + buttons.join("") + "</div>";
