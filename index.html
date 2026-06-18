@@ -14,7 +14,7 @@
       }
     } catch (error) {}
   </script>
-  <link rel="stylesheet" href="./styles.css?v=20260618-3">
+  <link rel="stylesheet" href="./styles.css?v=20260618-4">
   <link rel="stylesheet" href="./theme.css">
 </head>
 <body>
@@ -38,6 +38,7 @@
         <span class="pa-label">PA activo</span>
         <strong id="currentPa">Seleccionar nombre</strong>
       </button>
+      <button id="clearPaBtn" class="clear-pa-btn" type="button" hidden>Salir</button>
       <div id="syncState" class="sync-pill local">Modo local</div>
     </section>
 
@@ -124,7 +125,7 @@
   </div>
 
   <script src="./supabase-config.js?v=20260618-1"></script>
-  <script src="./app.js?v=20260618-3"></script>
+  <script src="./app.js?v=20260618-4"></script>
   <script>
     (function () {
       var key = "rbsb-pa-theme";
