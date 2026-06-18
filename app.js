@@ -107,6 +107,29 @@
     done: 3
   };
 
+  var TASK_SECTIONS = [
+    {
+      status: "pending",
+      title: "Disponibles",
+      empty: "No hay tareas disponibles."
+    },
+    {
+      status: "active",
+      title: "Tomadas / en proceso",
+      empty: "Nadie tiene tareas tomadas."
+    },
+    {
+      status: "blocked",
+      title: "Seguimiento",
+      empty: "No hay tareas con seguimiento."
+    },
+    {
+      status: "done",
+      title: "Listas",
+      empty: "Todavía no hay tareas terminadas."
+    }
+  ];
+
   var AREA_ORDER = [
     "Control Room",
     "Driveway",
@@ -705,6 +728,11 @@
       return;
     }
 
+    if (state.filter === "all") {
+      els.taskList.innerHTML = renderTaskSections(tasks);
+      return;
+    }
+
     var byArea = groupByArea(tasks);
     var html = "";
     Object.keys(byArea).forEach(function (area) {
@@ -714,6 +742,37 @@
       });
     });
     els.taskList.innerHTML = html;
+  }
+
+  function renderTaskSections(tasks) {
+    return TASK_SECTIONS.map(function (section) {
+      var sectionTasks = tasks.filter(function (task) {
+        return task.status === section.status;
+      });
+
+      var html = [
+        '<section class="status-section ' + escapeHtml(section.status) + '">',
+        '<div class="status-section-head">',
+        "<h2>" + escapeHtml(section.title) + "</h2>",
+        '<span class="section-count">' + sectionTasks.length + "</span>",
+        "</div>"
+      ];
+
+      if (!sectionTasks.length) {
+        html.push('<div class="section-empty">' + escapeHtml(section.empty) + "</div>");
+      } else {
+        var byArea = groupByArea(sectionTasks);
+        Object.keys(byArea).forEach(function (area) {
+          html.push('<h3 class="area-title">' + escapeHtml(area) + "</h3>");
+          byArea[area].forEach(function (task) {
+            html.push(renderTask(task));
+          });
+        });
+      }
+
+      html.push("</section>");
+      return html.join("");
+    }).join("");
   }
 
   function getFilteredTasks() {
