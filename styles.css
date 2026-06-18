@@ -327,6 +327,50 @@ textarea:focus {
   gap: 10px;
 }
 
+.status-section {
+  display: grid;
+  gap: 10px;
+}
+
+.status-section + .status-section {
+  margin-top: 10px;
+}
+
+.status-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 4px 2px 0;
+}
+
+.status-section-head h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 0.96rem;
+  line-height: 1.2;
+}
+
+.section-count {
+  flex: 0 0 auto;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--panel-2);
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 850;
+}
+
+.section-empty {
+  padding: 14px 12px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  color: var(--muted);
+  background: var(--panel);
+  font-size: 0.82rem;
+  text-align: center;
+}
+
 .area-title {
   margin: 10px 2px 0;
   color: var(--muted);
