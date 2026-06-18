@@ -43,6 +43,12 @@ create policy "public update pa tasks"
   using (true)
   with check (true);
 
+drop policy if exists "public delete pa tasks" on public.pa_tasks;
+create policy "public delete pa tasks"
+  on public.pa_tasks for delete
+  to anon
+  using (true);
+
 do $$
 begin
   alter publication supabase_realtime add table public.pa_tasks;
