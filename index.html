@@ -7,7 +7,15 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#111827">
   <title>Hacienda PA Tasks</title>
+  <script>
+    try {
+      if (localStorage.getItem("rbsb-pa-theme") === "dark") {
+        document.documentElement.setAttribute("data-theme", "dark");
+      }
+    } catch (error) {}
+  </script>
   <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./theme.css">
 </head>
 <body>
   <div class="app-shell">
@@ -17,9 +25,12 @@
         <h1>PA Tasks</h1>
         <p id="dateLine" class="date-line">Cargando...</p>
       </div>
-      <button id="refreshBtn" class="icon-btn" type="button" aria-label="Actualizar tareas" title="Actualizar">
-        <span aria-hidden="true">↻</span>
-      </button>
+      <div class="top-actions">
+        <button id="themeBtn" class="theme-btn" type="button" aria-label="Cambiar a modo oscuro">Dark</button>
+        <button id="refreshBtn" class="icon-btn" type="button" aria-label="Actualizar tareas" title="Actualizar">
+          <span aria-hidden="true">↻</span>
+        </button>
+      </div>
     </header>
 
     <section class="operator-panel">
@@ -114,5 +125,45 @@
 
   <script src="./supabase-config.js"></script>
   <script src="./app.js"></script>
+  <script>
+    (function () {
+      var key = "rbsb-pa-theme";
+      var button = document.getElementById("themeBtn");
+      var meta = document.querySelector('meta[name="theme-color"]');
+
+      function applyTheme(theme) {
+        var isDark = theme === "dark";
+        document.documentElement.setAttribute("data-theme", isDark ? "dark" : "light");
+        if (meta) meta.setAttribute("content", isDark ? "#0d1117" : "#111827");
+        if (button) {
+          button.textContent = isDark ? "Light" : "Dark";
+          button.setAttribute("aria-label", isDark ? "Cambiar a modo claro" : "Cambiar a modo oscuro");
+        }
+      }
+
+      function readTheme() {
+        try {
+          return localStorage.getItem(key) || "light";
+        } catch (error) {
+          return "light";
+        }
+      }
+
+      function writeTheme(theme) {
+        try {
+          localStorage.setItem(key, theme);
+        } catch (error) {}
+      }
+
+      applyTheme(readTheme());
+      if (button) {
+        button.addEventListener("click", function () {
+          var next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+          writeTheme(next);
+          applyTheme(next);
+        });
+      }
+    })();
+  </script>
 </body>
 </html>
