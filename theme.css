@@ -1,0 +1,54 @@
+.top-actions {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+.theme-btn {
+  height: 42px;
+  min-width: 58px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 850;
+  box-shadow: var(--shadow);
+}
+
+[data-theme="dark"] {
+  --bg: #0d1117;
+  --ink: #e6edf3;
+  --muted: #8b949e;
+  --line: #30363d;
+  --panel: #161b22;
+  --panel-2: #1c2330;
+  --pending: #8b949e;
+  --active: #58a6ff;
+  --blocked: #d29922;
+  --done: #3fb950;
+  --danger: #f85149;
+  --focus: #58a6ff;
+  --shadow: 0 14px 34px rgba(0, 0, 0, 0.28);
+}
+
+[data-theme="dark"] .topbar {
+  background: rgba(13, 17, 23, 0.94);
+}
+
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+  background: #0d1117;
+}
+
+[data-theme="dark"] .task-note {
+  background: rgba(210, 153, 34, 0.14);
+  color: #f2cc60;
+}
+
+[data-theme="dark"] .modal {
+  background: rgba(0, 0, 0, 0.62);
+}
