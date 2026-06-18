@@ -23,55 +23,55 @@
       fixed_key: "control-room-trash-sweep",
       area: "Control Room",
       title: "Trash sweep of control room",
-      detail: "PA's should check every 2 hours"
+      detail: "PA's should check every 3 hours"
     },
     {
       fixed_key: "control-room-restock-cooler",
       area: "Control Room",
       title: "Restock cooler in control room",
-      detail: "PA's should check every 2 hours"
+      detail: "PA's should check every 3 hours"
     },
     {
       fixed_key: "driveway-trash-cans",
       area: "Driveway",
       title: "Trash Sweep Driveway Trash Cans",
-      detail: "PA's should check every 2 hours"
+      detail: "PA's should check every 3 hours"
     },
     {
       fixed_key: "driveway-coolers-refrigerators",
       area: "Driveway",
       title: "Restock Coolers & Refrigerators in driveway",
-      detail: "PA's should check every 2 hours"
+      detail: "PA's should check every 3 hours"
     },
     {
       fixed_key: "driveway-cooling-rags",
       area: "Driveway",
       title: "Restock Cooling Rags",
-      detail: "PA's should check every 2 hours"
+      detail: "PA's should check every 3 hours"
     },
     {
       fixed_key: "driveway-crafty-catering-tent",
       area: "Driveway",
       title: "Restock Crafty in Catering Tent",
-      detail: "PA's should check every 2 hours"
+      detail: "PA's should check every 3 hours"
     },
     {
       fixed_key: "driveway-crafty-audio-garage",
       area: "Driveway",
       title: "Restock Crafty in Audio Garage",
-      detail: "PA's should check every 2 hours"
+      detail: "PA's should check every 3 hours"
     },
     {
       fixed_key: "driveway-trash-audio-garage",
       area: "Driveway",
       title: "Trash Sweep Audio Garage",
-      detail: "PA's should check every 2 hours"
+      detail: "PA's should check every 3 hours"
     },
     {
       fixed_key: "production-office-trash-sweep",
       area: "Production Office",
       title: "Trash Sweep PO",
-      detail: "PA's should check every 2 hours"
+      detail: "PA's should check every 3 hours"
     },
     {
       fixed_key: "production-office-drop-distro-call-sheets",
@@ -83,13 +83,13 @@
       fixed_key: "production-office-check-crafty-inventory",
       area: "Production Office",
       title: "Check Crafty Inventory (Garage)",
-      detail: "PA's should check every 2 hours"
+      detail: "PA's should check every 3 hours"
     },
     {
       fixed_key: "production-office-check-water-inventory",
       area: "Production Office",
       title: "Check Water Inventory (Garage)",
-      detail: "PA's should check every 2 hours"
+      detail: "PA's should check every 3 hours"
     }
   ];
 
@@ -118,6 +118,9 @@
 
   var STORAGE_PREFIX = "rbsb-pa-tasks";
   var PA_STORAGE_KEY = "rbsb-pa-current-pa";
+  var FIXED_TASK_REPEAT_HOURS = 3;
+  var FIXED_TASK_REPEAT_MS = FIXED_TASK_REPEAT_HOURS * 60 * 60 * 1000;
+  var REFRESH_INTERVAL_MS = 60 * 1000;
 
   var state = {
     today: todayKey(),
@@ -129,7 +132,8 @@
     table: "pa_tasks",
     realtimeChannel: null,
     noteTaskId: null,
-    noteMode: "note"
+    noteMode: "note",
+    refreshing: false
   };
 
   var els = {};
@@ -143,15 +147,15 @@
     renderPa();
     renderPaList();
     await initBackend();
-    await loadTasks();
-    await ensureFixedTasks();
-    await loadTasks();
+    await refreshTasks();
+    window.setInterval(refreshTasks, REFRESH_INTERVAL_MS);
   }
 
   function cacheElements() {
     els.dateLine = document.getElementById("dateLine");
     els.currentPa = document.getElementById("currentPa");
     els.paButton = document.getElementById("paButton");
+    els.clearPaBtn = document.getElementById("clearPaBtn");
     els.paModal = document.getElementById("paModal");
     els.paList = document.getElementById("paList");
     els.syncState = document.getElementById("syncState");
@@ -177,8 +181,10 @@
       openModal("paModal");
     });
 
+    els.clearPaBtn.addEventListener("click", clearPa);
+
     els.refreshBtn.addEventListener("click", function () {
-      loadTasks();
+      refreshTasks();
     });
 
     els.addTaskForm.addEventListener("submit", handleAddTask);
@@ -215,7 +221,7 @@
     els.noteForm.addEventListener("submit", handleSaveNote);
 
     window.addEventListener("storage", function (event) {
-      if (event.key === storageKey()) loadTasks();
+      if (event.key === storageKey()) refreshTasks();
     });
   }
 
@@ -280,6 +286,22 @@
         }
       )
       .subscribe();
+  }
+
+  async function refreshTasks() {
+    if (state.refreshing) return;
+    state.refreshing = true;
+    try {
+      await loadTasks();
+      await ensureFixedTasks();
+      await loadTasks();
+      var didSync = await syncFixedTaskDefinitions();
+      if (didSync) await loadTasks();
+      var didReset = await resetDueFixedTasks();
+      if (didReset) await loadTasks();
+    } finally {
+      state.refreshing = false;
+    }
   }
 
   async function loadTasks() {
@@ -354,6 +376,107 @@
 
     state.tasks = state.tasks.concat(missing);
     saveLocalTasks();
+  }
+
+  async function syncFixedTaskDefinitions() {
+    var fixedUpdates = state.tasks
+      .map(function (task) {
+        var definition = getFixedDefinition(task.fixed_key);
+        if (!definition) return null;
+        if (
+          task.title === definition.title &&
+          task.area === definition.area &&
+          task.detail === definition.detail
+        ) {
+          return null;
+        }
+        return {
+          task: task,
+          patch: {
+            title: definition.title,
+            area: definition.area,
+            detail: definition.detail,
+            updated_at: nowIso()
+          }
+        };
+      })
+      .filter(Boolean);
+
+    if (!fixedUpdates.length) return false;
+
+    if (state.client) {
+      for (var i = 0; i < fixedUpdates.length; i += 1) {
+        var result = await state.client
+          .from(state.table)
+          .update(fixedUpdates[i].patch)
+          .eq("id", fixedUpdates[i].task.id);
+
+        if (result.error) {
+          console.error(result.error);
+          setSyncState("error", "Error");
+        }
+      }
+      return true;
+    }
+
+    state.tasks = state.tasks.map(function (task) {
+      var definition = getFixedDefinition(task.fixed_key);
+      if (!definition) return task;
+      return normalizeTask(
+        Object.assign({}, task, {
+          title: definition.title,
+          area: definition.area,
+          detail: definition.detail,
+          updated_at: nowIso()
+        })
+      );
+    });
+    saveLocalTasks();
+    render();
+    return true;
+  }
+
+  async function resetDueFixedTasks() {
+    var dueTasks = state.tasks.filter(isFixedTaskDueAgain);
+    if (!dueTasks.length) return false;
+
+    if (state.client) {
+      var resetAt = nowIso();
+      for (var i = 0; i < dueTasks.length; i += 1) {
+        var result = await state.client
+          .from(state.table)
+          .update({
+            status: "pending",
+            assignee: "",
+            updated_at: resetAt,
+            started_at: null,
+            completed_at: null
+          })
+          .eq("id", dueTasks[i].id);
+
+        if (result.error) {
+          console.error(result.error);
+          setSyncState("error", "Error");
+        }
+      }
+      return true;
+    }
+
+    state.tasks = state.tasks.map(function (task) {
+      if (!isFixedTaskDueAgain(task)) return task;
+      return normalizeTask(
+        Object.assign({}, task, {
+          status: "pending",
+          assignee: "",
+          updated_at: nowIso(),
+          started_at: null,
+          completed_at: null
+        })
+      );
+    });
+    saveLocalTasks();
+    render();
+    return true;
   }
 
   async function handleAddTask(event) {
@@ -647,6 +770,7 @@
     var isFixed = Boolean(task.fixed_key);
     var updated = formatTime(task.updated_at || task.created_at);
     var assignee = task.assignee || "Sin responsable";
+    var nextDue = getFixedTaskNextDueLabel(task);
     var detail = task.detail ? '<p class="task-detail">' + escapeHtml(task.detail) + "</p>" : "";
     var notes = task.notes
       ? '<div class="task-note">' + escapeHtml(task.notes).replace(/\n/g, "<br>") + "</div>"
@@ -666,6 +790,7 @@
       '<span class="meta-chip">' + escapeHtml(isFixed ? "Checklist fijo" : "Pendiente nuevo") + "</span>",
       '<span class="meta-chip">' + escapeHtml(assignee) + "</span>",
       '<span class="meta-chip">Actualizado ' + escapeHtml(updated) + "</span>",
+      nextDue ? '<span class="meta-chip due-chip">' + escapeHtml(nextDue) + "</span>" : "",
       "</div>",
       notes,
       "</div>",
@@ -742,8 +867,16 @@
     });
   }
 
+  function clearPa() {
+    state.currentPa = "";
+    writeStorage(PA_STORAGE_KEY, "");
+    renderPa();
+    renderPaList();
+  }
+
   function renderPa() {
     els.currentPa.textContent = state.currentPa || "Seleccionar nombre";
+    els.clearPaBtn.hidden = !state.currentPa;
   }
 
   function renderDate() {
@@ -803,6 +936,31 @@
     return state.tasks.find(function (task) {
       return task.id === id;
     });
+  }
+
+  function getFixedDefinition(fixedKey) {
+    if (!fixedKey) return null;
+    return (
+      FIXED_TASKS.find(function (task) {
+        return task.fixed_key === fixedKey;
+      }) || null
+    );
+  }
+
+  function isFixedTaskDueAgain(task) {
+    if (!task.fixed_key || task.status !== "done" || !task.completed_at) return false;
+    var completedAt = new Date(task.completed_at).getTime();
+    if (!Number.isFinite(completedAt)) return false;
+    return Date.now() - completedAt >= FIXED_TASK_REPEAT_MS;
+  }
+
+  function getFixedTaskNextDueLabel(task) {
+    if (!task.fixed_key || task.status !== "done" || !task.completed_at) return "";
+    var completedAt = new Date(task.completed_at).getTime();
+    if (!Number.isFinite(completedAt)) return "";
+    var nextDueAt = completedAt + FIXED_TASK_REPEAT_MS;
+    if (Date.now() >= nextDueAt) return "Disponible pronto";
+    return "Disponible " + formatTime(new Date(nextDueAt).toISOString());
   }
 
   function appendNote(existing, pa, text) {
