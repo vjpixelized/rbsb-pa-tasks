@@ -86,7 +86,7 @@
     if (state.currentPa === MANAGER_NAME && isManagerAuthenticated()) {
       state.managerOpen = true;
       els.managerPanel.hidden = false;
-      renderManager();
+      render();
     }
     if (!state.currentPa) openPaModal(true);
   }
@@ -317,6 +317,16 @@
         completed_at: nowIso()
       });
     }
+
+    if (button.dataset.action === "delete") {
+      if (!canManageTasks()) {
+        alert("Solo Abraham Soto puede borrar pendientes.");
+        return;
+      }
+
+      if (!confirm("¿Borrar este pendiente?")) return;
+      await deleteTask(task.id);
+    }
   }
 
   async function patchTask(id, patch) {
@@ -336,6 +346,25 @@
     state.tasks = state.tasks.map(function (task) {
       if (task.id !== id) return task;
       return normalizeTask(Object.assign({}, task, patch));
+    });
+    saveLocalTasks();
+    render();
+  }
+
+  async function deleteTask(id) {
+    if (state.client) {
+      var result = await state.client.from(state.table).delete().eq("id", id);
+      if (result.error) {
+        console.error(result.error);
+        alert("No se pudo borrar.");
+        return;
+      }
+      await loadTasks();
+      return;
+    }
+
+    state.tasks = state.tasks.filter(function (task) {
+      return task.id !== id;
     });
     saveLocalTasks();
     render();
@@ -395,15 +424,22 @@
   }
 
   function renderActions(task) {
+    var actions = [];
+
     if (task.status === "pending") {
-      return '<div class="task-actions single"><button type="button" class="primary" data-action="take" data-id="' + escapeHtml(task.id) + '">Tomar pendiente</button></div>';
+      actions.push('<button type="button" class="primary" data-action="take" data-id="' + escapeHtml(task.id) + '">Tomar pendiente</button>');
     }
 
     if (task.status === "active") {
-      return '<div class="task-actions single"><button type="button" class="success" data-action="done" data-id="' + escapeHtml(task.id) + '">Pendiente acabado</button></div>';
+      actions.push('<button type="button" class="success" data-action="done" data-id="' + escapeHtml(task.id) + '">Pendiente acabado</button>');
     }
 
-    return "";
+    if (canManageTasks()) {
+      actions.push('<button type="button" class="danger" data-action="delete" data-id="' + escapeHtml(task.id) + '">Borrar</button>');
+    }
+
+    if (!actions.length) return "";
+    return '<div class="task-actions' + (actions.length === 1 ? " single" : "") + '">' + actions.join("") + "</div>";
   }
 
   function renderPaList() {
@@ -432,6 +468,7 @@
     writeStorage(PA_STORAGE_KEY, state.currentPa);
     renderPa();
     renderPaList();
+    render();
     closeModal("paModal");
   }
 
@@ -466,7 +503,7 @@
     closeModal("paModal");
     state.managerOpen = true;
     els.managerPanel.hidden = false;
-    renderManager();
+    render();
     els.managerPanel.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
@@ -609,6 +646,10 @@
     if (state.currentPa) return true;
     openPaModal(true);
     return false;
+  }
+
+  function canManageTasks() {
+    return state.currentPa === MANAGER_NAME && isManagerAuthenticated();
   }
 
   function isManagerAuthenticated() {
