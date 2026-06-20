@@ -589,6 +589,16 @@ select:focus {
   background: rgba(13, 17, 23, 0.94);
 }
 
+[data-theme="dark"] .tab-btn.active {
+  border-color: var(--active);
+  background: var(--active);
+  color: #0d1117;
+}
+
+[data-theme="dark"] .tab-btn.active span {
+  color: #0d1117;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
