@@ -109,6 +109,7 @@
     els.addTaskLocked = document.getElementById("addTaskLocked");
     els.newTaskTitle = document.getElementById("newTaskTitle");
     els.newTaskArea = document.getElementById("newTaskArea");
+    els.newTaskDetail = document.getElementById("newTaskDetail");
     els.taskList = document.getElementById("taskList");
     els.pendingCount = document.getElementById("pendingCount");
     els.activeCount = document.getElementById("activeCount");
@@ -275,7 +276,7 @@
       fixed_key: null,
       title: title,
       area: els.newTaskArea.value || "General",
-      detail: "",
+      detail: els.newTaskDetail.value.trim(),
       status: "pending",
       assignee: "",
       notes: "",
@@ -288,6 +289,7 @@
 
     await insertTask(task);
     els.newTaskTitle.value = "";
+    els.newTaskDetail.value = "";
     await loadTasks();
   }
 
@@ -437,9 +439,22 @@
       '<span class="meta-chip">' + escapeHtml(assignee) + "</span>",
       '<span class="meta-chip">' + escapeHtml(timeLabel) + "</span>",
       "</div>",
+      renderTaskDetail(task),
       "</div>",
       renderActions(task),
       "</article>"
+    ].join("");
+  }
+
+  function renderTaskDetail(task) {
+    var detail = String(task.detail || "").trim();
+    if (!detail) return "";
+
+    return [
+      '<div class="task-detail">',
+      "<strong>Instrucciones / notas</strong>",
+      "<p>" + escapeHtml(detail) + "</p>",
+      "</div>"
     ].join("");
   }
 
