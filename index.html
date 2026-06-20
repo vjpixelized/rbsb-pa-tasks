@@ -14,7 +14,7 @@
       }
     } catch (error) {}
   </script>
-  <link rel="stylesheet" href="./styles.css?v=20260620-8">
+  <link rel="stylesheet" href="./styles.css?v=20260620-9">
   <link rel="stylesheet" href="./theme.css">
 </head>
 <body>
@@ -77,6 +77,8 @@
             <option value="Barra 2 (adentro)">Barra 2 (adentro)</option>
             <option value="Otro">Otro</option>
           </select>
+          <label class="notes-label" for="newTaskPeople">Personas necesarias</label>
+          <input id="newTaskPeople" type="number" min="1" max="12" inputmode="numeric" value="1">
           <label class="notes-label" for="newTaskDetail">Instrucciones / notas</label>
           <textarea id="newTaskDetail" rows="4" placeholder="Opcional: escribe instrucciones, lista de cosas o notas importantes"></textarea>
         </form>
@@ -140,8 +142,40 @@
     </div>
   </div>
 
+  <div id="detailModal" class="modal" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="detailModalTitle">
+      <div class="modal-head">
+        <h2 id="detailModalTitle">Editar instrucciones</h2>
+        <button class="plain-btn" type="button" data-close-modal="detailModal">Cerrar</button>
+      </div>
+      <form id="detailForm">
+        <label for="detailText">Instrucciones / notas</label>
+        <textarea id="detailText" rows="6" placeholder="Escribe instrucciones o notas"></textarea>
+        <div class="modal-actions">
+          <button type="submit">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="paNoteModal" class="modal" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="paNoteModalTitle">
+      <div class="modal-head">
+        <h2 id="paNoteModalTitle">Agregar nota PA</h2>
+        <button class="plain-btn" type="button" data-close-modal="paNoteModal">Cerrar</button>
+      </div>
+      <form id="paNoteForm">
+        <label for="paNoteText">Nota rápida</label>
+        <textarea id="paNoteText" rows="4" placeholder="Ej. Tomé 2 mesas más o falta extensión"></textarea>
+        <div class="modal-actions">
+          <button type="submit">Agregar nota</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script src="./supabase-config.js?v=20260618-1"></script>
-  <script src="./app.js?v=20260620-8"></script>
+  <script src="./app.js?v=20260620-9"></script>
   <script>
     (function () {
       var key = "rbsb-pa-theme";
