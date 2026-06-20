@@ -14,7 +14,7 @@
       }
     } catch (error) {}
   </script>
-  <link rel="stylesheet" href="./styles.css?v=20260620-7">
+  <link rel="stylesheet" href="./styles.css?v=20260620-8">
   <link rel="stylesheet" href="./theme.css">
 </head>
 <body>
@@ -77,6 +77,8 @@
             <option value="Barra 2 (adentro)">Barra 2 (adentro)</option>
             <option value="Otro">Otro</option>
           </select>
+          <label class="notes-label" for="newTaskDetail">Instrucciones / notas</label>
+          <textarea id="newTaskDetail" rows="4" placeholder="Opcional: escribe instrucciones, lista de cosas o notas importantes"></textarea>
         </form>
         <p id="addTaskLocked" class="locked-note" hidden>Solo coordinadores pueden agregar nuevos pendientes.</p>
       </section>
@@ -139,7 +141,7 @@
   </div>
 
   <script src="./supabase-config.js?v=20260618-1"></script>
-  <script src="./app.js?v=20260620-7"></script>
+  <script src="./app.js?v=20260620-8"></script>
   <script>
     (function () {
       var key = "rbsb-pa-theme";
