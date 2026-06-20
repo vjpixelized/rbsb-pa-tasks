@@ -14,7 +14,7 @@
       }
     } catch (error) {}
   </script>
-  <link rel="stylesheet" href="./styles.css?v=20260618-4">
+  <link rel="stylesheet" href="./styles.css?v=20260620-3">
   <link rel="stylesheet" href="./theme.css">
 </head>
 <body>
@@ -27,9 +27,7 @@
       </div>
       <div class="top-actions">
         <button id="themeBtn" class="theme-btn" type="button" aria-label="Cambiar a modo oscuro">Dark</button>
-        <button id="refreshBtn" class="icon-btn" type="button" aria-label="Actualizar tareas" title="Actualizar">
-          <span aria-hidden="true">↻</span>
-        </button>
+        <button id="refreshBtn" class="icon-btn" type="button" aria-label="Actualizar" title="Actualizar">↻</button>
       </div>
     </header>
 
@@ -38,94 +36,87 @@
         <span class="pa-label">PA activo</span>
         <strong id="currentPa">Seleccionar nombre</strong>
       </button>
-      <button id="clearPaBtn" class="clear-pa-btn" type="button" hidden>Salir</button>
-      <div id="syncState" class="sync-pill local">Modo local</div>
+      <div id="syncState" class="sync-pill local">Local</div>
     </section>
 
     <main>
-      <section class="summary-band" aria-label="Resumen">
-        <div class="summary-cell pending">
-          <span id="pendingCount">0</span>
-          <small>Pendientes</small>
-        </div>
-        <div class="summary-cell active">
-          <span id="activeCount">0</span>
-          <small>En proceso</small>
-        </div>
-        <div class="summary-cell blocked">
-          <span id="blockedCount">0</span>
-          <small>Seguimiento</small>
-        </div>
-        <div class="summary-cell done">
-          <span id="doneCount">0</span>
-          <small>Listas</small>
-        </div>
-      </section>
-
-      <section class="add-task-panel">
+      <section class="quick-add">
         <form id="addTaskForm">
-          <div class="field-stack">
-            <label for="newTaskTitle">Nuevo pendiente</label>
-            <input id="newTaskTitle" type="text" autocomplete="off" placeholder="Ej. Llevar extensión al área de fans">
-          </div>
-          <div class="add-row">
-            <select id="newTaskArea" aria-label="Área">
-              <option value="Control Room">Control Room</option>
-              <option value="Driveway">Driveway</option>
-              <option value="Production Office">Production Office</option>
-              <option value="Catering">Catering</option>
-              <option value="Audio Garage">Audio Garage</option>
-              <option value="Otro">Otro</option>
-            </select>
+          <label for="newTaskTitle">Nuevo pendiente</label>
+          <div class="quick-add-row">
+            <input id="newTaskTitle" type="text" autocomplete="off" placeholder="Escribe el pendiente">
             <button type="submit">Agregar</button>
           </div>
+          <select id="newTaskArea" aria-label="Área">
+            <option value="General">General</option>
+            <option value="Control Room">Control Room</option>
+            <option value="Driveway">Driveway</option>
+            <option value="Production Office">Production Office</option>
+            <option value="Catering">Catering</option>
+            <option value="Audio Garage">Audio Garage</option>
+          </select>
         </form>
       </section>
 
-      <section class="toolbar" aria-label="Filtros">
-        <div class="filter-row">
-          <button class="filter-btn active" type="button" data-filter="all">Todo</button>
-          <button class="filter-btn" type="button" data-filter="pending">Pendiente</button>
-          <button class="filter-btn" type="button" data-filter="active">Proceso</button>
-          <button class="filter-btn" type="button" data-filter="blocked">Seguimiento</button>
-          <button class="filter-btn" type="button" data-filter="done">Listo</button>
-        </div>
-        <input id="searchInput" class="search-input" type="search" autocomplete="off" placeholder="Buscar tarea, área, PA o nota">
+      <section class="view-tabs" aria-label="Listas">
+        <button class="tab-btn active" type="button" data-filter="pending">
+          <span id="pendingCount">0</span>
+          Pendientes
+        </button>
+        <button class="tab-btn" type="button" data-filter="active">
+          <span id="activeCount">0</span>
+          En proceso
+        </button>
+        <button class="tab-btn" type="button" data-filter="done">
+          <span id="doneCount">0</span>
+          Terminadas
+        </button>
       </section>
 
       <section id="taskList" class="task-list" aria-live="polite"></section>
+
+      <section id="managerPanel" class="manager-panel" hidden>
+        <div class="manager-head">
+          <div>
+            <p class="eyebrow">Abraham Soto</p>
+            <h2>Resultados de hoy</h2>
+          </div>
+          <button id="managerCloseBtn" class="plain-btn" type="button">Cerrar</button>
+        </div>
+        <div id="managerContent"></div>
+      </section>
     </main>
   </div>
 
   <div id="paModal" class="modal" aria-hidden="true">
     <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="paModalTitle">
       <div class="modal-head">
-        <h2 id="paModalTitle">Seleccionar PA</h2>
-        <button class="plain-btn" type="button" data-close-modal="paModal">Cerrar</button>
+        <h2 id="paModalTitle">Escoge tu nombre</h2>
+        <button id="paModalClose" class="plain-btn" type="button" data-close-modal="paModal">Cerrar</button>
       </div>
       <div id="paList" class="pa-list"></div>
     </div>
   </div>
 
-  <div id="noteModal" class="modal" aria-hidden="true">
-    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="noteModalTitle">
+  <div id="managerModal" class="modal" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="managerModalTitle">
       <div class="modal-head">
-        <h2 id="noteModalTitle">Nota de tarea</h2>
-        <button class="plain-btn" type="button" data-close-modal="noteModal">Cerrar</button>
+        <h2 id="managerModalTitle">Clave Abraham Soto</h2>
+        <button class="plain-btn" type="button" data-close-modal="managerModal">Cerrar</button>
       </div>
-      <form id="noteForm">
-        <p id="noteTaskTitle" class="note-target"></p>
-        <label for="noteText">Nota</label>
-        <textarea id="noteText" rows="5" placeholder="Ej. Se terminó, pero faltó una extensión para conectar el ventilador."></textarea>
+      <form id="managerForm">
+        <label for="managerPin">Clave</label>
+        <input id="managerPin" type="password" inputmode="numeric" autocomplete="off" placeholder="Clave">
+        <p id="managerError" class="form-error" hidden>Clave incorrecta.</p>
         <div class="modal-actions">
-          <button id="saveNoteBtn" type="submit">Guardar nota</button>
+          <button type="submit">Entrar</button>
         </div>
       </form>
     </div>
   </div>
 
   <script src="./supabase-config.js?v=20260618-1"></script>
-  <script src="./app.js?v=20260618-4"></script>
+  <script src="./app.js?v=20260620-3"></script>
   <script>
     (function () {
       var key = "rbsb-pa-theme";
