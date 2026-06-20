@@ -71,7 +71,11 @@
     managerOpen: false,
     coordinatorLoginName: "",
     detailTaskId: "",
-    paNoteTaskId: ""
+    paNoteTaskId: "",
+    knownTaskIds: {},
+    initialLoadDone: false,
+    suppressNextNewTaskNotice: false,
+    noticeTimer: null
   };
 
   var els = {};
@@ -105,6 +109,7 @@
     els.paModal = document.getElementById("paModal");
     els.paModalClose = document.getElementById("paModalClose");
     els.paList = document.getElementById("paList");
+    els.appNotice = document.getElementById("appNotice");
     els.syncState = document.getElementById("syncState");
     els.refreshBtn = document.getElementById("refreshBtn");
     els.quickAdd = document.getElementById("quickAdd");
@@ -240,6 +245,9 @@
   }
 
   async function loadTasks() {
+    var previousKnown = state.knownTaskIds;
+    var nextTasks = [];
+
     if (state.client) {
       var result = await state.client
         .from(state.table)
@@ -254,18 +262,60 @@
         return;
       }
 
-      state.tasks = (result.data || []).map(normalizeTask).filter(isUserTask);
+      nextTasks = (result.data || []).map(normalizeTask).filter(isUserTask);
+      updateTasksFromLoad(nextTasks, previousKnown);
       setSyncState("online", "En vivo");
-      render();
       return;
     }
 
     try {
-      state.tasks = JSON.parse(readStorage(storageKey(), "[]")).map(normalizeTask).filter(isUserTask);
+      nextTasks = JSON.parse(readStorage(storageKey(), "[]")).map(normalizeTask).filter(isUserTask);
     } catch (error) {
-      state.tasks = [];
+      nextTasks = [];
     }
+    updateTasksFromLoad(nextTasks, previousKnown);
+  }
+
+  function updateTasksFromLoad(nextTasks, previousKnown) {
+    handleNewTaskNotices(nextTasks, previousKnown || {});
+    state.tasks = nextTasks;
+    state.knownTaskIds = indexTaskIds(nextTasks);
     render();
+  }
+
+  function indexTaskIds(tasks) {
+    return tasks.reduce(function (ids, task) {
+      ids[task.id] = true;
+      return ids;
+    }, {});
+  }
+
+  function handleNewTaskNotices(nextTasks, previousKnown) {
+    if (!state.initialLoadDone) {
+      state.initialLoadDone = true;
+      return;
+    }
+
+    var newPendingTasks = nextTasks.filter(function (task) {
+      return task.status === "pending" && !previousKnown[task.id];
+    });
+
+    if (!newPendingTasks.length) return;
+
+    if (state.suppressNextNewTaskNotice) {
+      state.suppressNextNewTaskNotice = false;
+      newPendingTasks = newPendingTasks.filter(function (task) {
+        return task.created_by !== state.currentPa;
+      });
+      if (!newPendingTasks.length) return;
+    }
+
+    if (newPendingTasks.length === 1) {
+      showNotice("Nuevo pendiente: " + newPendingTasks[0].title);
+      return;
+    }
+
+    showNotice(newPendingTasks.length + " pendientes nuevos");
   }
 
   async function handleAddTask(event) {
@@ -303,6 +353,7 @@
       completed_at: null
     });
 
+    state.suppressNextNewTaskNotice = true;
     await insertTask(task);
     els.newTaskTitle.value = "";
     els.newTaskPeople.value = "1";
@@ -1135,6 +1186,32 @@
   function setSyncState(kind, label) {
     els.syncState.className = "sync-pill " + kind;
     els.syncState.textContent = label;
+  }
+
+  function showNotice(message) {
+    if (!els.appNotice) return;
+    window.clearTimeout(state.noticeTimer);
+    els.appNotice.textContent = message;
+    els.appNotice.hidden = false;
+    els.appNotice.classList.remove("hide");
+    els.appNotice.classList.add("show");
+    vibrateNotice();
+    state.noticeTimer = window.setTimeout(hideNotice, 5200);
+  }
+
+  function hideNotice() {
+    if (!els.appNotice) return;
+    els.appNotice.classList.add("hide");
+    state.noticeTimer = window.setTimeout(function () {
+      els.appNotice.hidden = true;
+      els.appNotice.classList.remove("show", "hide");
+    }, 180);
+  }
+
+  function vibrateNotice() {
+    try {
+      if (window.navigator && window.navigator.vibrate) window.navigator.vibrate(80);
+    } catch (error) {}
   }
 
   function openModal(id) {
