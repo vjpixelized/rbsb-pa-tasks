@@ -411,9 +411,15 @@ select:focus {
   font-weight: 800;
 }
 
-.task-actions.single {
-  display: block;
+.task-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 8px;
   padding: 0 13px 13px;
+}
+
+.task-actions.single {
+  grid-template-columns: 1fr;
 }
 
 .task-actions button {
@@ -426,6 +432,10 @@ select:focus {
 
 .task-actions button.success {
   background: var(--done);
+}
+
+.task-actions button.danger {
+  background: var(--danger);
 }
 
 .empty-state,
