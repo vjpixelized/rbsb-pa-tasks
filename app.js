@@ -1,5 +1,6 @@
 (function () {
   var PA_LIST = [
+    "Abraham Soto",
     "Jacob Rodriguez",
     "Uncas Castillo",
     "Mickey Maruri",
@@ -29,7 +30,9 @@
 
   var STORAGE_PREFIX = "rbsb-pa-tasks";
   var PA_STORAGE_KEY = "rbsb-pa-current-pa";
+  var MANAGER_NAME = "Abraham Soto";
   var MANAGER_PIN = "2468";
+  var MANAGER_AUTH_KEY = "rbsb-pa-manager-auth";
 
   var state = {
     today: todayKey(),
@@ -48,12 +51,21 @@
 
   async function init() {
     cacheElements();
+    if (state.currentPa === MANAGER_NAME && !isManagerAuthenticated()) {
+      state.currentPa = "";
+      writeStorage(PA_STORAGE_KEY, "");
+    }
     bindEvents();
     renderDate();
     renderPa();
     renderPaList();
     await initBackend();
     await loadTasks();
+    if (state.currentPa === MANAGER_NAME && isManagerAuthenticated()) {
+      state.managerOpen = true;
+      els.managerPanel.hidden = false;
+      renderManager();
+    }
     if (!state.currentPa) openPaModal(true);
   }
 
@@ -73,7 +85,6 @@
     els.pendingCount = document.getElementById("pendingCount");
     els.activeCount = document.getElementById("activeCount");
     els.doneCount = document.getElementById("doneCount");
-    els.managerBtn = document.getElementById("managerBtn");
     els.managerPanel = document.getElementById("managerPanel");
     els.managerContent = document.getElementById("managerContent");
     els.managerCloseBtn = document.getElementById("managerCloseBtn");
@@ -115,15 +126,6 @@
 
     els.managerModal.addEventListener("click", function (event) {
       if (event.target === els.managerModal) closeModal("managerModal");
-    });
-
-    els.managerBtn.addEventListener("click", function () {
-      els.managerPin.value = "";
-      els.managerError.hidden = true;
-      openModal("managerModal");
-      setTimeout(function () {
-        els.managerPin.focus();
-      }, 40);
     });
 
     els.managerForm.addEventListener("submit", handleManagerLogin);
@@ -390,18 +392,39 @@
 
     els.paList.querySelectorAll(".pa-choice").forEach(function (button) {
       button.addEventListener("click", function () {
-        state.currentPa = button.dataset.pa || "";
-        writeStorage(PA_STORAGE_KEY, state.currentPa);
-        renderPa();
-        renderPaList();
-        closeModal("paModal");
+        selectPa(button.dataset.pa || "");
       });
     });
+  }
+
+  function selectPa(name) {
+    if (name === MANAGER_NAME) {
+      openManagerLogin();
+      return;
+    }
+
+    setManagerAuthenticated(false);
+    state.managerOpen = false;
+    els.managerPanel.hidden = true;
+    state.currentPa = name;
+    writeStorage(PA_STORAGE_KEY, state.currentPa);
+    renderPa();
+    renderPaList();
+    closeModal("paModal");
   }
 
   function renderPa() {
     els.currentPa.textContent = state.currentPa || "Seleccionar nombre";
     if (els.paModalClose) els.paModalClose.hidden = !state.currentPa;
+  }
+
+  function openManagerLogin() {
+    els.managerPin.value = "";
+    els.managerError.hidden = true;
+    openModal("managerModal");
+    setTimeout(function () {
+      els.managerPin.focus();
+    }, 40);
   }
 
   function handleManagerLogin(event) {
@@ -412,7 +435,13 @@
       return;
     }
 
+    setManagerAuthenticated(true);
+    state.currentPa = MANAGER_NAME;
+    writeStorage(PA_STORAGE_KEY, state.currentPa);
+    renderPa();
+    renderPaList();
     closeModal("managerModal");
+    closeModal("paModal");
     state.managerOpen = true;
     els.managerPanel.hidden = false;
     renderManager();
@@ -558,6 +587,24 @@
     if (state.currentPa) return true;
     openPaModal(true);
     return false;
+  }
+
+  function isManagerAuthenticated() {
+    try {
+      return sessionStorage.getItem(MANAGER_AUTH_KEY) === "yes";
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function setManagerAuthenticated(value) {
+    try {
+      if (value) {
+        sessionStorage.setItem(MANAGER_AUTH_KEY, "yes");
+      } else {
+        sessionStorage.removeItem(MANAGER_AUTH_KEY);
+      }
+    } catch (error) {}
   }
 
   function openPaModal(required) {
