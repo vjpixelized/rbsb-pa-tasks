@@ -283,6 +283,17 @@ select:focus {
   background: var(--focus);
 }
 
+.locked-note {
+  margin: 0;
+  padding: 14px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--muted);
+  font-weight: 800;
+  text-align: center;
+}
+
 .view-tabs {
   position: sticky;
   top: 72px;
