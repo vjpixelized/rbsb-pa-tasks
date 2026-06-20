@@ -106,6 +106,28 @@ textarea:focus-visible {
   }
 }
 
+@keyframes notice-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes notice-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.99);
+  }
+}
+
 @keyframes complete-glow {
   0% {
     box-shadow: 0 0 0 rgba(18, 128, 92, 0), var(--shadow);
@@ -199,6 +221,26 @@ h1 {
   border-color: rgba(15, 118, 110, 0.35);
   box-shadow: 0 12px 30px rgba(23, 32, 51, 0.12);
   transform: translateY(-1px);
+}
+
+.app-notice {
+  margin: 12px 0 0;
+  padding: 11px 13px;
+  border: 1px solid rgba(15, 118, 110, 0.24);
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(15, 118, 110, 0.96), rgba(18, 128, 92, 0.96));
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 900;
+  box-shadow: 0 14px 34px rgba(15, 118, 110, 0.22);
+}
+
+.app-notice.show {
+  animation: notice-in 180ms ease-out both;
+}
+
+.app-notice.hide {
+  animation: notice-out 180ms ease-in both;
 }
 
 .operator-panel {
