@@ -14,7 +14,7 @@
       }
     } catch (error) {}
   </script>
-  <link rel="stylesheet" href="./styles.css?v=20260620-5">
+  <link rel="stylesheet" href="./styles.css?v=20260620-6">
   <link rel="stylesheet" href="./theme.css">
 </head>
 <body>
@@ -40,7 +40,7 @@
     </section>
 
     <main>
-      <section class="quick-add">
+      <section id="quickAdd" class="quick-add">
         <form id="addTaskForm">
           <label for="newTaskTitle">Nuevo pendiente</label>
           <div class="quick-add-row">
@@ -78,6 +78,7 @@
             <option value="Otro">Otro</option>
           </select>
         </form>
+        <p id="addTaskLocked" class="locked-note" hidden>Solo coordinadores pueden agregar nuevos pendientes.</p>
       </section>
 
       <section class="view-tabs" aria-label="Listas">
@@ -100,7 +101,7 @@
       <section id="managerPanel" class="manager-panel" hidden>
         <div class="manager-head">
           <div>
-            <p class="eyebrow">Abraham Soto</p>
+            <p id="managerEyebrow" class="eyebrow">Coordinador</p>
             <h2>Resultados de hoy</h2>
           </div>
           <button id="managerCloseBtn" class="plain-btn" type="button">Cerrar</button>
@@ -123,7 +124,7 @@
   <div id="managerModal" class="modal" aria-hidden="true">
     <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="managerModalTitle">
       <div class="modal-head">
-        <h2 id="managerModalTitle">Clave Abraham Soto</h2>
+        <h2 id="managerModalTitle">Clave coordinador</h2>
         <button class="plain-btn" type="button" data-close-modal="managerModal">Cerrar</button>
       </div>
       <form id="managerForm">
@@ -138,7 +139,7 @@
   </div>
 
   <script src="./supabase-config.js?v=20260618-1"></script>
-  <script src="./app.js?v=20260620-6"></script>
+  <script src="./app.js?v=20260620-7"></script>
   <script>
     (function () {
       var key = "rbsb-pa-theme";
