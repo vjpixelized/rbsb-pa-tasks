@@ -1,6 +1,7 @@
 (function () {
   var PA_LIST = [
     "Abraham Soto",
+    "Pablo Navarro",
     "Jacob Rodriguez",
     "Uncas Castillo",
     "Mickey Maruri",
@@ -52,9 +53,11 @@
 
   var STORAGE_PREFIX = "rbsb-pa-tasks";
   var PA_STORAGE_KEY = "rbsb-pa-current-pa";
-  var MANAGER_NAME = "Abraham Soto";
-  var MANAGER_PIN = "2468";
-  var MANAGER_AUTH_KEY = "rbsb-pa-manager-auth";
+  var COORDINATOR_PINS = {
+    "Abraham Soto": "2468",
+    "Pablo Navarro": "1357"
+  };
+  var MANAGER_AUTH_PREFIX = "rbsb-pa-manager-auth:";
 
   var state = {
     today: todayKey(),
@@ -64,7 +67,8 @@
     client: null,
     table: "pa_tasks",
     realtimeChannel: null,
-    managerOpen: false
+    managerOpen: false,
+    coordinatorLoginName: ""
   };
 
   var els = {};
@@ -73,7 +77,7 @@
 
   async function init() {
     cacheElements();
-    if (state.currentPa === MANAGER_NAME && !isManagerAuthenticated()) {
+    if (isCoordinator(state.currentPa) && !isManagerAuthenticated(state.currentPa)) {
       state.currentPa = "";
       writeStorage(PA_STORAGE_KEY, "");
     }
@@ -83,7 +87,7 @@
     renderPaList();
     await initBackend();
     await loadTasks();
-    if (state.currentPa === MANAGER_NAME && isManagerAuthenticated()) {
+    if (isCoordinator(state.currentPa) && isManagerAuthenticated(state.currentPa)) {
       state.managerOpen = true;
       els.managerPanel.hidden = false;
       render();
@@ -100,7 +104,9 @@
     els.paList = document.getElementById("paList");
     els.syncState = document.getElementById("syncState");
     els.refreshBtn = document.getElementById("refreshBtn");
+    els.quickAdd = document.getElementById("quickAdd");
     els.addTaskForm = document.getElementById("addTaskForm");
+    els.addTaskLocked = document.getElementById("addTaskLocked");
     els.newTaskTitle = document.getElementById("newTaskTitle");
     els.newTaskArea = document.getElementById("newTaskArea");
     els.taskList = document.getElementById("taskList");
@@ -108,9 +114,11 @@
     els.activeCount = document.getElementById("activeCount");
     els.doneCount = document.getElementById("doneCount");
     els.managerPanel = document.getElementById("managerPanel");
+    els.managerEyebrow = document.getElementById("managerEyebrow");
     els.managerContent = document.getElementById("managerContent");
     els.managerCloseBtn = document.getElementById("managerCloseBtn");
     els.managerModal = document.getElementById("managerModal");
+    els.managerModalTitle = document.getElementById("managerModalTitle");
     els.managerForm = document.getElementById("managerForm");
     els.managerPin = document.getElementById("managerPin");
     els.managerError = document.getElementById("managerError");
@@ -250,6 +258,10 @@
   async function handleAddTask(event) {
     event.preventDefault();
     if (!requirePa()) return;
+    if (!canAddTasks()) {
+      alert("Solo coordinadores pueden agregar pendientes.");
+      return;
+    }
 
     var title = els.newTaskTitle.value.trim();
     if (!title) {
@@ -320,7 +332,7 @@
 
     if (button.dataset.action === "delete") {
       if (!canManageTasks()) {
-        alert("Solo Abraham Soto puede borrar pendientes.");
+        alert("Solo coordinadores pueden borrar pendientes.");
         return;
       }
 
@@ -371,9 +383,17 @@
   }
 
   function render() {
+    renderAddTaskAccess();
     renderSummary();
     renderTasks();
     if (state.managerOpen) renderManager();
+  }
+
+  function renderAddTaskAccess() {
+    if (!els.addTaskForm || !els.addTaskLocked) return;
+    var allowed = canAddTasks();
+    els.addTaskForm.hidden = !allowed;
+    els.addTaskLocked.hidden = allowed;
   }
 
   function renderSummary() {
@@ -456,12 +476,12 @@
   }
 
   function selectPa(name) {
-    if (name === MANAGER_NAME) {
-      openManagerLogin();
+    if (isCoordinator(name)) {
+      openManagerLogin(name);
       return;
     }
 
-    setManagerAuthenticated(false);
+    clearCoordinatorAuth();
     state.managerOpen = false;
     els.managerPanel.hidden = true;
     state.currentPa = name;
@@ -477,7 +497,9 @@
     if (els.paModalClose) els.paModalClose.hidden = !state.currentPa;
   }
 
-  function openManagerLogin() {
+  function openManagerLogin(name) {
+    state.coordinatorLoginName = name;
+    els.managerModalTitle.textContent = "Clave " + name;
     els.managerPin.value = "";
     els.managerError.hidden = true;
     openModal("managerModal");
@@ -488,14 +510,15 @@
 
   function handleManagerLogin(event) {
     event.preventDefault();
-    if (els.managerPin.value.trim() !== MANAGER_PIN) {
+    var name = state.coordinatorLoginName;
+    if (!isCoordinator(name) || els.managerPin.value.trim() !== COORDINATOR_PINS[name]) {
       els.managerError.hidden = false;
       els.managerPin.select();
       return;
     }
 
-    setManagerAuthenticated(true);
-    state.currentPa = MANAGER_NAME;
+    setManagerAuthenticated(name, true);
+    state.currentPa = name;
     writeStorage(PA_STORAGE_KEY, state.currentPa);
     renderPa();
     renderPaList();
@@ -521,6 +544,7 @@
         return String(b.completed_at || "").localeCompare(String(a.completed_at || ""));
       });
 
+    els.managerEyebrow.textContent = state.currentPa || "Coordinador";
     els.managerContent.innerHTML = [
       '<div class="manager-grid">',
       statCard("Pendientes", counts.pending),
@@ -649,25 +673,43 @@
   }
 
   function canManageTasks() {
-    return state.currentPa === MANAGER_NAME && isManagerAuthenticated();
+    return isCoordinator(state.currentPa) && isManagerAuthenticated(state.currentPa);
   }
 
-  function isManagerAuthenticated() {
+  function canAddTasks() {
+    return canManageTasks();
+  }
+
+  function isCoordinator(name) {
+    return Object.prototype.hasOwnProperty.call(COORDINATOR_PINS, name);
+  }
+
+  function isManagerAuthenticated(name) {
     try {
-      return sessionStorage.getItem(MANAGER_AUTH_KEY) === "yes";
+      return sessionStorage.getItem(managerAuthKey(name)) === "yes";
     } catch (error) {
       return false;
     }
   }
 
-  function setManagerAuthenticated(value) {
+  function setManagerAuthenticated(name, value) {
     try {
       if (value) {
-        sessionStorage.setItem(MANAGER_AUTH_KEY, "yes");
+        sessionStorage.setItem(managerAuthKey(name), "yes");
       } else {
-        sessionStorage.removeItem(MANAGER_AUTH_KEY);
+        sessionStorage.removeItem(managerAuthKey(name));
       }
     } catch (error) {}
+  }
+
+  function clearCoordinatorAuth() {
+    Object.keys(COORDINATOR_PINS).forEach(function (name) {
+      setManagerAuthenticated(name, false);
+    });
+  }
+
+  function managerAuthKey(name) {
+    return MANAGER_AUTH_PREFIX + name;
   }
 
   function openPaModal(required) {
