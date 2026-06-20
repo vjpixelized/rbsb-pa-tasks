@@ -21,11 +21,33 @@
 
   var AREA_ORDER = [
     "General",
-    "Control Room",
-    "Driveway",
-    "Production Office",
+    "Control",
+    "Carpa Comedor",
+    "Baño 1",
+    "Baño 2",
+    "PO",
+    "Host Room",
+    "Entrada casa",
+    "Cocina cast",
+    "Sala Cast",
+    "Alberca 1",
+    "Alberca 2",
+    "Chapel",
+    "Cuarto de entrevista 2ndo piso",
+    "Cuarto de entrevista Abajo",
+    "Game room",
+    "Audio",
+    "Camera",
+    "Playa",
+    "cochera casa",
     "Catering",
-    "Audio Garage"
+    "Crafty",
+    "Ratonera de Micky",
+    "Lighting",
+    "Caseta de Seguridad",
+    "Barra 1 (afuera)",
+    "Barra 2 (adentro)",
+    "Otro"
   ];
 
   var STORAGE_PREFIX = "rbsb-pa-tasks";
