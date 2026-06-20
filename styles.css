@@ -39,6 +39,7 @@ select {
 
 button {
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 
 button,
@@ -47,25 +48,33 @@ button,
 .manager-panel,
 .modal-card {
   transition:
-    transform 160ms ease,
-    opacity 160ms ease,
-    border-color 160ms ease,
-    box-shadow 160ms ease,
-    background-color 160ms ease;
+    transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background-color 180ms ease,
+    color 180ms ease;
 }
 
 button:active {
   transform: translateY(1px) scale(0.99);
 }
 
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 3px solid rgba(15, 118, 110, 0.28);
+  outline-offset: 2px;
+}
+
 @keyframes soft-rise {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(10px) scale(0.99);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
@@ -77,6 +86,33 @@ button:active {
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes task-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.985);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(-1px) scale(1.002);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes complete-glow {
+  0% {
+    box-shadow: 0 0 0 rgba(18, 128, 92, 0), var(--shadow);
+  }
+  45% {
+    box-shadow: 0 0 0 4px rgba(18, 128, 92, 0.12), var(--shadow);
+  }
+  100% {
+    box-shadow: 0 0 0 rgba(18, 128, 92, 0), var(--shadow);
   }
 }
 
@@ -152,6 +188,15 @@ h1 {
   min-width: 42px;
   padding: 0 11px;
   box-shadow: var(--shadow);
+}
+
+.theme-btn:hover,
+.icon-btn:hover,
+.plain-btn:hover,
+.pa-button:hover {
+  border-color: rgba(15, 118, 110, 0.35);
+  box-shadow: 0 12px 30px rgba(23, 32, 51, 0.12);
+  transform: translateY(-1px);
 }
 
 .operator-panel {
@@ -283,6 +328,14 @@ select:focus {
   background: var(--focus);
 }
 
+.quick-add button:hover,
+.modal-actions button:hover,
+.task-actions button:hover {
+  filter: brightness(1.05);
+  box-shadow: 0 10px 22px rgba(23, 32, 51, 0.14);
+  transform: translateY(-1px);
+}
+
 .locked-note {
   margin: 0;
   padding: 14px;
@@ -308,6 +361,7 @@ select:focus {
 }
 
 .tab-btn {
+  position: relative;
   min-height: 52px;
   padding: 6px;
   border: 1px solid var(--line);
@@ -316,6 +370,32 @@ select:focus {
   color: var(--muted);
   font-size: 0.72rem;
   font-weight: 900;
+  overflow: hidden;
+  transition:
+    transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    background-color 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.tab-btn:hover {
+  border-color: rgba(15, 118, 110, 0.26);
+  transform: translateY(-1px);
+}
+
+.tab-btn::after {
+  content: "";
+  position: absolute;
+  inset: auto 10px 6px;
+  height: 3px;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: 0;
+  transform: scaleX(0.5);
+  transition:
+    opacity 180ms ease,
+    transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .tab-btn span {
@@ -330,10 +410,17 @@ select:focus {
   border-color: var(--ink);
   background: var(--ink);
   color: #fff;
+  box-shadow: 0 10px 24px rgba(23, 32, 51, 0.16);
+  transform: translateY(-1px);
 }
 
 .tab-btn.active span {
   color: #fff;
+}
+
+.tab-btn.active::after {
+  opacity: 0.72;
+  transform: scaleX(1);
 }
 
 .task-list {
@@ -356,7 +443,19 @@ select:focus {
   background: var(--panel);
   box-shadow: var(--shadow);
   overflow: hidden;
-  animation: soft-rise 180ms ease-out both;
+  animation: task-pop 240ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  transition:
+    transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    border-color 180ms ease,
+    border-left-color 220ms ease,
+    box-shadow 180ms ease,
+    background-color 180ms ease;
+}
+
+.task-card:hover {
+  border-color: rgba(15, 118, 110, 0.22);
+  box-shadow: 0 14px 34px rgba(23, 32, 51, 0.11);
+  transform: translateY(-1px);
 }
 
 .task-card.active {
@@ -365,6 +464,9 @@ select:focus {
 
 .task-card.done {
   border-left-color: var(--done);
+  animation:
+    task-pop 240ms cubic-bezier(0.2, 0.8, 0.2, 1) both,
+    complete-glow 700ms ease-out both;
 }
 
 .task-main {
@@ -394,6 +496,14 @@ select:focus {
   font-weight: 900;
   text-transform: uppercase;
   white-space: nowrap;
+  transition:
+    background-color 180ms ease,
+    color 180ms ease,
+    transform 180ms ease;
+}
+
+.task-card:hover .status-badge {
+  transform: translateY(-1px);
 }
 
 .status-badge.active {
