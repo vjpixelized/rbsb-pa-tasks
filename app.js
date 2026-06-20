@@ -53,6 +53,7 @@
 
   var STORAGE_PREFIX = "rbsb-pa-tasks";
   var PA_STORAGE_KEY = "rbsb-pa-current-pa";
+  var TASK_META_PREFIX = "pa-task-meta:";
   var COORDINATOR_PINS = {
     "Abraham Soto": "2468",
     "Pablo Navarro": "1357"
@@ -68,7 +69,9 @@
     table: "pa_tasks",
     realtimeChannel: null,
     managerOpen: false,
-    coordinatorLoginName: ""
+    coordinatorLoginName: "",
+    detailTaskId: "",
+    paNoteTaskId: ""
   };
 
   var els = {};
@@ -109,6 +112,7 @@
     els.addTaskLocked = document.getElementById("addTaskLocked");
     els.newTaskTitle = document.getElementById("newTaskTitle");
     els.newTaskArea = document.getElementById("newTaskArea");
+    els.newTaskPeople = document.getElementById("newTaskPeople");
     els.newTaskDetail = document.getElementById("newTaskDetail");
     els.taskList = document.getElementById("taskList");
     els.pendingCount = document.getElementById("pendingCount");
@@ -123,6 +127,12 @@
     els.managerForm = document.getElementById("managerForm");
     els.managerPin = document.getElementById("managerPin");
     els.managerError = document.getElementById("managerError");
+    els.detailModal = document.getElementById("detailModal");
+    els.detailForm = document.getElementById("detailForm");
+    els.detailText = document.getElementById("detailText");
+    els.paNoteModal = document.getElementById("paNoteModal");
+    els.paNoteForm = document.getElementById("paNoteForm");
+    els.paNoteText = document.getElementById("paNoteText");
   }
 
   function bindEvents() {
@@ -160,6 +170,8 @@
     });
 
     els.managerForm.addEventListener("submit", handleManagerLogin);
+    els.detailForm.addEventListener("submit", handleDetailSubmit);
+    els.paNoteForm.addEventListener("submit", handlePaNoteSubmit);
     els.managerCloseBtn.addEventListener("click", function () {
       state.managerOpen = false;
       els.managerPanel.hidden = true;
@@ -279,7 +291,11 @@
       detail: els.newTaskDetail.value.trim(),
       status: "pending",
       assignee: "",
-      notes: "",
+      notes: stringifyTaskMeta({
+        neededPeople: readNeededPeopleInput(),
+        supporters: [],
+        updates: []
+      }),
       created_by: state.currentPa,
       created_at: nowIso(),
       updated_at: nowIso(),
@@ -289,6 +305,7 @@
 
     await insertTask(task);
     els.newTaskTitle.value = "";
+    els.newTaskPeople.value = "1";
     els.newTaskDetail.value = "";
     await loadTasks();
   }
@@ -316,9 +333,11 @@
     if (!task) return;
 
     if (button.dataset.action === "take") {
+      var takeMeta = ensureSupporter(readTaskMeta(task), state.currentPa);
       await patchTask(task.id, {
         status: "active",
         assignee: state.currentPa,
+        notes: stringifyTaskMeta(takeMeta),
         started_at: task.started_at || nowIso(),
         completed_at: null
       });
@@ -341,6 +360,101 @@
       if (!confirm("¿Borrar este pendiente?")) return;
       await deleteTask(task.id);
     }
+
+    if (button.dataset.action === "support") {
+      await supportTask(task);
+    }
+
+    if (button.dataset.action === "edit-detail") {
+      if (!canManageTasks()) {
+        alert("Solo coordinadores pueden editar instrucciones.");
+        return;
+      }
+      openDetailEditor(task);
+    }
+
+    if (button.dataset.action === "pa-note") {
+      openPaNoteEditor(task);
+    }
+  }
+
+  async function supportTask(task) {
+    if (task.status !== "active") return;
+
+    var meta = readTaskMeta(task);
+    var team = getSupportTeam(task, meta);
+    if (team.indexOf(state.currentPa) !== -1) {
+      alert("Ya estás apoyando este pendiente.");
+      return;
+    }
+
+    if (team.length >= meta.neededPeople) {
+      alert("Este pendiente ya tiene el apoyo completo.");
+      return;
+    }
+
+    await patchTask(task.id, {
+      notes: stringifyTaskMeta(ensureSupporter(meta, state.currentPa))
+    });
+  }
+
+  function openDetailEditor(task) {
+    state.detailTaskId = task.id;
+    els.detailText.value = task.detail || "";
+    openModal("detailModal");
+    setTimeout(function () {
+      els.detailText.focus();
+    }, 40);
+  }
+
+  async function handleDetailSubmit(event) {
+    event.preventDefault();
+    if (!canManageTasks()) {
+      alert("Solo coordinadores pueden editar instrucciones.");
+      return;
+    }
+
+    var task = findTask(state.detailTaskId);
+    if (!task) return;
+    await patchTask(task.id, {
+      detail: els.detailText.value.trim()
+    });
+    state.detailTaskId = "";
+    closeModal("detailModal");
+  }
+
+  function openPaNoteEditor(task) {
+    state.paNoteTaskId = task.id;
+    els.paNoteText.value = "";
+    openModal("paNoteModal");
+    setTimeout(function () {
+      els.paNoteText.focus();
+    }, 40);
+  }
+
+  async function handlePaNoteSubmit(event) {
+    event.preventDefault();
+    if (!requirePa()) return;
+
+    var task = findTask(state.paNoteTaskId);
+    var text = els.paNoteText.value.trim();
+    if (!task || !text) {
+      els.paNoteText.focus();
+      return;
+    }
+
+    var meta = readTaskMeta(task);
+    meta.updates.push({
+      name: state.currentPa,
+      text: text,
+      at: nowIso()
+    });
+
+    await patchTask(task.id, {
+      notes: stringifyTaskMeta(meta)
+    });
+    state.paNoteTaskId = "";
+    closeModal("paNoteModal");
   }
 
   async function patchTask(id, patch) {
@@ -438,8 +552,11 @@
       '<div class="task-meta">',
       '<span class="meta-chip">' + escapeHtml(assignee) + "</span>",
       '<span class="meta-chip">' + escapeHtml(timeLabel) + "</span>",
+      renderSupportChip(task),
       "</div>",
       renderTaskDetail(task),
+      renderSupportInfo(task),
+      renderPaUpdates(task),
       "</div>",
       renderActions(task),
       "</article>"
@@ -458,6 +575,50 @@
     ].join("");
   }
 
+  function renderSupportChip(task) {
+    var meta = readTaskMeta(task);
+    if (meta.neededPeople <= 1 && task.status !== "active") return "";
+    var team = getSupportTeam(task, meta);
+    return '<span class="meta-chip">Equipo ' + team.length + "/" + meta.neededPeople + "</span>";
+  }
+
+  function renderSupportInfo(task) {
+    var meta = readTaskMeta(task);
+    if (meta.neededPeople <= 1 && !meta.supporters.length) return "";
+
+    var team = getSupportTeam(task, meta);
+    var names = team.length ? team.join(", ") : "Sin apoyo todavía";
+    return [
+      '<div class="task-support">',
+      '<strong>Apoyo</strong>',
+      "<p>" + escapeHtml(team.length + "/" + meta.neededPeople + " personas") + "</p>",
+      "<span>" + escapeHtml(names) + "</span>",
+      "</div>"
+    ].join("");
+  }
+
+  function renderPaUpdates(task) {
+    var updates = readTaskMeta(task).updates;
+    if (!updates.length) return "";
+
+    return [
+      '<div class="pa-updates">',
+      "<strong>Notas de PAs</strong>",
+      updates
+        .map(function (update) {
+          return [
+            "<p>",
+            "<b>" + escapeHtml(update.name || "PA") + "</b>",
+            " <span>" + escapeHtml(formatTime(update.at)) + "</span><br>",
+            escapeHtml(update.text || ""),
+            "</p>"
+          ].join("");
+        })
+        .join(""),
+      "</div>"
+    ].join("");
+  }
+
   function renderActions(task) {
     var actions = [];
 
@@ -467,14 +628,34 @@
 
     if (task.status === "active") {
       actions.push('<button type="button" class="success" data-action="done" data-id="' + escapeHtml(task.id) + '">Pendiente acabado</button>');
+      actions.push(renderSupportAction(task));
+    }
+
+    if (task.status === "active" || task.status === "done") {
+      actions.push('<button type="button" class="secondary" data-action="pa-note" data-id="' + escapeHtml(task.id) + '">Agregar nota</button>');
     }
 
     if (canManageTasks()) {
+      actions.push('<button type="button" class="secondary" data-action="edit-detail" data-id="' + escapeHtml(task.id) + '">Editar instrucciones</button>');
       actions.push('<button type="button" class="danger" data-action="delete" data-id="' + escapeHtml(task.id) + '">Borrar</button>');
     }
 
+    actions = actions.filter(Boolean);
     if (!actions.length) return "";
     return '<div class="task-actions' + (actions.length === 1 ? " single" : "") + '">' + actions.join("") + "</div>";
+  }
+
+  function renderSupportAction(task) {
+    var meta = readTaskMeta(task);
+    var team = getSupportTeam(task, meta);
+    if (meta.neededPeople <= 1) return "";
+    if (team.indexOf(state.currentPa) !== -1) {
+      return '<button type="button" class="muted" disabled>Ya estás apoyando</button>';
+    }
+    if (team.length >= meta.neededPeople) {
+      return '<button type="button" class="muted" disabled>Apoyo completo</button>';
+    }
+    return '<button type="button" class="secondary" data-action="support" data-id="' + escapeHtml(task.id) + '">Apoyar (' + team.length + "/" + meta.neededPeople + ")</button>";
   }
 
   function renderPaList() {
@@ -679,6 +860,84 @@
     });
 
     return counts;
+  }
+
+  function readNeededPeopleInput() {
+    var value = Number(els.newTaskPeople.value || 1);
+    if (!Number.isFinite(value)) return 1;
+    return Math.max(1, Math.min(12, Math.round(value)));
+  }
+
+  function readTaskMeta(task) {
+    var fallback = {
+      neededPeople: 1,
+      supporters: [],
+      updates: []
+    };
+    var raw = String(task.notes || "");
+    if (raw.indexOf(TASK_META_PREFIX) !== 0) return fallback;
+
+    try {
+      var parsed = JSON.parse(raw.slice(TASK_META_PREFIX.length));
+      return normalizeTaskMeta(parsed);
+    } catch (error) {
+      return fallback;
+    }
+  }
+
+  function normalizeTaskMeta(meta) {
+    var neededPeople = Number(meta && meta.neededPeople);
+    if (!Number.isFinite(neededPeople)) neededPeople = 1;
+
+    return {
+      neededPeople: Math.max(1, Math.min(12, Math.round(neededPeople))),
+      supporters: uniqueNames(Array.isArray(meta && meta.supporters) ? meta.supporters : []),
+      updates: Array.isArray(meta && meta.updates)
+        ? meta.updates
+            .map(function (update) {
+              return {
+                name: String(update.name || ""),
+                text: String(update.text || ""),
+                at: update.at || nowIso()
+              };
+            })
+            .filter(function (update) {
+              return update.text.trim();
+            })
+        : []
+    };
+  }
+
+  function stringifyTaskMeta(meta) {
+    return TASK_META_PREFIX + JSON.stringify(normalizeTaskMeta(meta));
+  }
+
+  function ensureSupporter(meta, name) {
+    var next = normalizeTaskMeta(meta);
+    if (name && next.supporters.indexOf(name) === -1) {
+      next.supporters.push(name);
+    }
+    next.supporters = uniqueNames(next.supporters);
+    return next;
+  }
+
+  function getSupportTeam(task, meta) {
+    var names = [];
+    if (task.assignee) names.push(task.assignee);
+    return uniqueNames(names.concat(normalizeTaskMeta(meta).supporters));
+  }
+
+  function uniqueNames(names) {
+    var seen = {};
+    return names
+      .map(function (name) {
+        return String(name || "").trim();
+      })
+      .filter(function (name) {
+        if (!name || seen[name]) return false;
+        seen[name] = true;
+        return true;
+      });
   }
 
   function requirePa() {
