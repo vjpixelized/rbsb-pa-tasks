@@ -807,7 +807,7 @@
     return String(value == null ? "" : value).replace(/[&<>"']/g, function (char) {
       return {
         "&": "&amp;",
-        "<": "lt;",
+        "<": "&lt;",
         ">": "&gt;",
         '"': "&quot;",
         "'": "&#039;"
