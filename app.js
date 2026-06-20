@@ -361,6 +361,14 @@
       await deleteTask(task.id);
     }
 
+    if (button.dataset.action === "restore-active") {
+      if (!canManageTasks()) {
+        alert("Solo coordinadores pueden corregir pendientes terminados.");
+        return;
+      }
+      await restoreTaskToActive(task);
+    }
+
     if (button.dataset.action === "support") {
       await supportTask(task);
     }
@@ -395,6 +403,26 @@
 
     await patchTask(task.id, {
       notes: stringifyTaskMeta(ensureSupporter(meta, state.currentPa))
+    });
+  }
+
+  async function restoreTaskToActive(task) {
+    if (task.status !== "done") return;
+    if (!confirm("¿Regresar este pendiente a En proceso?")) return;
+
+    var meta = readTaskMeta(task);
+    meta.updates.push({
+      name: state.currentPa,
+      text: "Corrigió el estado: regresó de Terminada a En proceso.",
+      at: nowIso()
+    });
+
+    await patchTask(task.id, {
+      status: "active",
+      assignee: task.assignee || state.currentPa,
+      notes: stringifyTaskMeta(meta),
+      started_at: task.started_at || nowIso(),
+      completed_at: null
     });
   }
 
@@ -636,6 +664,9 @@
     }
 
     if (canManageTasks()) {
+      if (task.status === "done") {
+        actions.push('<button type="button" class="secondary" data-action="restore-active" data-id="' + escapeHtml(task.id) + '">Regresar a proceso</button>');
+      }
       actions.push('<button type="button" class="secondary" data-action="edit-detail" data-id="' + escapeHtml(task.id) + '">Editar instrucciones</button>');
       actions.push('<button type="button" class="danger" data-action="delete" data-id="' + escapeHtml(task.id) + '">Borrar</button>');
     }
