@@ -14,7 +14,7 @@
       }
     } catch (error) {}
   </script>
-  <link rel="stylesheet" href="./styles.css?v=20260620-9">
+  <link rel="stylesheet" href="./styles.css?v=20260620-11">
   <link rel="stylesheet" href="./theme.css">
 </head>
 <body>
@@ -30,6 +30,8 @@
         <button id="refreshBtn" class="icon-btn" type="button" aria-label="Actualizar" title="Actualizar">↻</button>
       </div>
     </header>
+
+    <div id="appNotice" class="app-notice" role="status" aria-live="polite" hidden></div>
 
     <section class="operator-panel">
       <button id="paButton" class="pa-button" type="button">
@@ -175,7 +177,7 @@
   </div>
 
   <script src="./supabase-config.js?v=20260618-1"></script>
-  <script src="./app.js?v=20260620-10"></script>
+  <script src="./app.js?v=20260620-11"></script>
   <script>
     (function () {
       var key = "rbsb-pa-theme";
