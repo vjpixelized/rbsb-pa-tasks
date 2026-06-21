@@ -112,9 +112,9 @@
     els.appNotice = document.getElementById("appNotice");
     els.syncState = document.getElementById("syncState");
     els.refreshBtn = document.getElementById("refreshBtn");
-    els.quickAdd = document.getElementById("quickAdd");
+    els.addFab = document.getElementById("addFab");
+    els.addTaskModal = document.getElementById("addTaskModal");
     els.addTaskForm = document.getElementById("addTaskForm");
-    els.addTaskLocked = document.getElementById("addTaskLocked");
     els.newTaskTitle = document.getElementById("newTaskTitle");
     els.newTaskArea = document.getElementById("newTaskArea");
     els.newTaskPeople = document.getElementById("newTaskPeople");
@@ -148,6 +148,13 @@
     els.refreshBtn.addEventListener("click", loadTasks);
     els.addTaskForm.addEventListener("submit", handleAddTask);
     els.taskList.addEventListener("click", handleTaskAction);
+
+    if (els.addFab) els.addFab.addEventListener("click", openAddTask);
+    if (els.addTaskModal) {
+      els.addTaskModal.addEventListener("click", function (event) {
+        if (event.target === els.addTaskModal) closeModal("addTaskModal");
+      });
+    }
 
     document.querySelectorAll(".tab-btn").forEach(function (button) {
       button.addEventListener("click", function () {
@@ -318,6 +325,18 @@
     showNotice(newPendingTasks.length + " pendientes nuevos");
   }
 
+  function openAddTask() {
+    if (!requirePa()) return;
+    if (!canAddTasks()) {
+      alert("Solo coordinadores pueden agregar pendientes.");
+      return;
+    }
+    openModal("addTaskModal");
+    setTimeout(function () {
+      els.newTaskTitle.focus();
+    }, 40);
+  }
+
   async function handleAddTask(event) {
     event.preventDefault();
     if (!requirePa()) return;
@@ -358,6 +377,7 @@
     els.newTaskTitle.value = "";
     els.newTaskPeople.value = "1";
     els.newTaskDetail.value = "";
+    closeModal("addTaskModal");
     await loadTasks();
   }
 
@@ -585,10 +605,8 @@
   }
 
   function renderAddTaskAccess() {
-    if (!els.addTaskForm || !els.addTaskLocked) return;
-    var allowed = canAddTasks();
-    els.addTaskForm.hidden = !allowed;
-    els.addTaskLocked.hidden = allowed;
+    if (!els.addFab) return;
+    els.addFab.hidden = !canAddTasks();
   }
 
   function renderSummary() {

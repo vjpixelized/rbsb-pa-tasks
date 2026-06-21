@@ -14,8 +14,8 @@
       }
     } catch (error) {}
   </script>
-  <link rel="stylesheet" href="./styles.css?v=20260620-11">
-  <link rel="stylesheet" href="./theme.css">
+  <link rel="stylesheet" href="./styles.css?v=20260621-1">
+  <link rel="stylesheet" href="./theme.css?v=20260621-1">
 </head>
 <body>
   <div class="app-shell">
@@ -42,51 +42,6 @@
     </section>
 
     <main>
-      <section id="quickAdd" class="quick-add">
-        <form id="addTaskForm">
-          <label for="newTaskTitle">Nuevo pendiente</label>
-          <div class="quick-add-row">
-            <input id="newTaskTitle" type="text" autocomplete="off" placeholder="Escribe el pendiente">
-            <button type="submit">Agregar</button>
-          </div>
-          <select id="newTaskArea" aria-label="Área">
-            <option value="General">General</option>
-            <option value="Control">Control</option>
-            <option value="Carpa Comedor">Carpa Comedor</option>
-            <option value="Baño 1">Baño 1</option>
-            <option value="Baño 2">Baño 2</option>
-            <option value="PO">PO</option>
-            <option value="Host Room">Host Room</option>
-            <option value="Entrada casa">Entrada casa</option>
-            <option value="Cocina cast">Cocina cast</option>
-            <option value="Sala Cast">Sala Cast</option>
-            <option value="Alberca 1">Alberca 1</option>
-            <option value="Alberca 2">Alberca 2</option>
-            <option value="Chapel">Chapel</option>
-            <option value="Cuarto de entrevista 2ndo piso">Cuarto de entrevista 2ndo piso</option>
-            <option value="Cuarto de entrevista Abajo">Cuarto de entrevista Abajo</option>
-            <option value="Game room">Game room</option>
-            <option value="Audio">Audio</option>
-            <option value="Camera">Camera</option>
-            <option value="Playa">Playa</option>
-            <option value="cochera casa">cochera casa</option>
-            <option value="Catering">Catering</option>
-            <option value="Crafty">Crafty</option>
-            <option value="Ratonera de Micky">Ratonera de Micky</option>
-            <option value="Lighting">Lighting</option>
-            <option value="Caseta de Seguridad">Caseta de Seguridad</option>
-            <option value="Barra 1 (afuera)">Barra 1 (afuera)</option>
-            <option value="Barra 2 (adentro)">Barra 2 (adentro)</option>
-            <option value="Otro">Otro</option>
-          </select>
-          <label class="notes-label" for="newTaskPeople">Personas necesarias</label>
-          <input id="newTaskPeople" type="number" min="1" max="12" inputmode="numeric" value="1">
-          <label class="notes-label" for="newTaskDetail">Instrucciones / notas</label>
-          <textarea id="newTaskDetail" rows="4" placeholder="Opcional: escribe instrucciones, lista de cosas o notas importantes"></textarea>
-        </form>
-        <p id="addTaskLocked" class="locked-note" hidden>Solo coordinadores pueden agregar nuevos pendientes.</p>
-      </section>
-
       <section class="view-tabs" aria-label="Listas">
         <button class="tab-btn active" type="button" data-filter="pending">
           <span id="pendingCount">0</span>
@@ -115,6 +70,59 @@
         <div id="managerContent"></div>
       </section>
     </main>
+
+    <button id="addFab" class="add-fab" type="button" aria-label="Nuevo pendiente" title="Nuevo pendiente" hidden>+</button>
+  </div>
+
+  <div id="addTaskModal" class="modal" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="addTaskModalTitle">
+      <div class="modal-head">
+        <h2 id="addTaskModalTitle">Nuevo pendiente</h2>
+        <button class="plain-btn" type="button" data-close-modal="addTaskModal">Cerrar</button>
+      </div>
+      <form id="addTaskForm">
+        <label for="newTaskTitle">Pendiente</label>
+        <input id="newTaskTitle" type="text" autocomplete="off" placeholder="Escribe el pendiente">
+        <label class="notes-label" for="newTaskArea">Área</label>
+        <select id="newTaskArea" aria-label="Área">
+          <option value="General">General</option>
+          <option value="Control">Control</option>
+          <option value="Carpa Comedor">Carpa Comedor</option>
+          <option value="Baño 1">Baño 1</option>
+          <option value="Baño 2">Baño 2</option>
+          <option value="PO">PO</option>
+          <option value="Host Room">Host Room</option>
+          <option value="Entrada casa">Entrada casa</option>
+          <option value="Cocina cast">Cocina cast</option>
+          <option value="Sala Cast">Sala Cast</option>
+          <option value="Alberca 1">Alberca 1</option>
+          <option value="Alberca 2">Alberca 2</option>
+          <option value="Chapel">Chapel</option>
+          <option value="Cuarto de entrevista 2ndo piso">Cuarto de entrevista 2ndo piso</option>
+          <option value="Cuarto de entrevista Abajo">Cuarto de entrevista Abajo</option>
+          <option value="Game room">Game room</option>
+          <option value="Audio">Audio</option>
+          <option value="Camera">Camera</option>
+          <option value="Playa">Playa</option>
+          <option value="cochera casa">cochera casa</option>
+          <option value="Catering">Catering</option>
+          <option value="Crafty">Crafty</option>
+          <option value="Ratonera de Micky">Ratonera de Micky</option>
+          <option value="Lighting">Lighting</option>
+          <option value="Caseta de Seguridad">Caseta de Seguridad</option>
+          <option value="Barra 1 (afuera)">Barra 1 (afuera)</option>
+          <option value="Barra 2 (adentro)">Barra 2 (adentro)</option>
+          <option value="Otro">Otro</option>
+        </select>
+        <label class="notes-label" for="newTaskPeople">Personas necesarias</label>
+        <input id="newTaskPeople" type="number" min="1" max="12" inputmode="numeric" value="1">
+        <label class="notes-label" for="newTaskDetail">Instrucciones / notas</label>
+        <textarea id="newTaskDetail" rows="4" placeholder="Opcional: instrucciones, lista de cosas o notas importantes"></textarea>
+        <div class="modal-actions">
+          <button type="submit">Agregar pendiente</button>
+        </div>
+      </form>
+    </div>
   </div>
 
   <div id="paModal" class="modal" aria-hidden="true">
@@ -177,7 +185,7 @@
   </div>
 
   <script src="./supabase-config.js?v=20260618-1"></script>
-  <script src="./app.js?v=20260620-11"></script>
+  <script src="./app.js?v=20260621-1"></script>
   <script>
     (function () {
       var key = "rbsb-pa-theme";
