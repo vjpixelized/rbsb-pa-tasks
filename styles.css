@@ -466,11 +466,21 @@ textarea:focus {
 }
 
 .area-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   margin: 10px 2px 0;
   color: var(--muted);
   font-size: 0.76rem;
   font-weight: 600;
   letter-spacing: 0.02em;
+}
+
+.ico {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  opacity: 0.85;
 }
 
 .task-card {
@@ -536,6 +546,9 @@ textarea:focus {
 }
 
 .meta-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   padding: 5px 10px;
   border-radius: 999px;
   background: var(--panel-2);
@@ -552,7 +565,9 @@ textarea:focus {
 }
 
 .task-detail strong {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 5px;
   margin-bottom: 4px;
   color: var(--muted);
   font-size: 0.72rem;
@@ -578,7 +593,9 @@ textarea:focus {
 
 .task-support strong,
 .pa-updates strong {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 5px;
   margin-bottom: 4px;
   color: var(--muted);
   font-size: 0.72rem;

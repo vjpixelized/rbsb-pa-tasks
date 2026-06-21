@@ -647,12 +647,24 @@
     var byArea = groupByArea(tasks);
     var html = "";
     Object.keys(byArea).forEach(function (area) {
-      html += '<h2 class="area-title">' + escapeHtml(area) + "</h2>";
+      html += '<h2 class="area-title">' + icon("pin") + escapeHtml(area) + "</h2>";
       byArea[area].forEach(function (task) {
         html += renderTask(task);
       });
     });
     els.taskList.innerHTML = html;
+  }
+
+  function icon(name) {
+    var paths = {
+      pin: '<path d="M12 21s-6-5.3-6-10a6 6 0 0 1 12 0c0 4.7-6 10-6 10z"/><circle cx="12" cy="11" r="2.2"/>',
+      user: '<circle cx="12" cy="8" r="3.5"/><path d="M5.5 20c0-3.3 2.9-5.5 6.5-5.5s6.5 2.2 6.5 5.5"/>',
+      clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 1.8"/>',
+      users: '<circle cx="9" cy="8" r="3.2"/><path d="M3.5 19.5c0-3 2.5-4.8 5.5-4.8s5.5 1.8 5.5 4.8"/><path d="M16 5.2a3.2 3.2 0 0 1 0 6.2"/><path d="M20.5 19.5c0-2.4-1.4-3.9-3.6-4.5"/>',
+      note: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6"/><path d="M9 17h5"/>',
+      message: '<path d="M21 11.5a7.5 7.5 0 0 1-10.8 6.7L4 20l1.3-4.2A7.5 7.5 0 1 1 21 11.5z"/>'
+    };
+    return '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (paths[name] || "") + "</svg>";
   }
 
   function renderTask(task) {
@@ -667,8 +679,8 @@
       '<span class="status-badge ' + escapeHtml(task.status) + '">' + escapeHtml(STATUS_LABELS[task.status]) + "</span>",
       "</div>",
       '<div class="task-meta">',
-      '<span class="meta-chip">' + escapeHtml(assignee) + "</span>",
-      '<span class="meta-chip">' + escapeHtml(timeLabel) + "</span>",
+      '<span class="meta-chip">' + icon("user") + escapeHtml(assignee) + "</span>",
+      '<span class="meta-chip">' + icon("clock") + escapeHtml(timeLabel) + "</span>",
       renderSupportChip(task),
       "</div>",
       renderTaskDetail(task),
@@ -686,7 +698,7 @@
 
     return [
       '<div class="task-detail">',
-      "<strong>Instrucciones / notas</strong>",
+      "<strong>" + icon("note") + "Instrucciones / notas</strong>",
       "<p>" + escapeHtml(detail) + "</p>",
       "</div>"
     ].join("");
@@ -696,7 +708,7 @@
     var meta = readTaskMeta(task);
     if (meta.neededPeople <= 1 && task.status !== "active") return "";
     var team = getSupportTeam(task, meta);
-    return '<span class="meta-chip">Equipo ' + team.length + "/" + meta.neededPeople + "</span>";
+    return '<span class="meta-chip">' + icon("users") + "Equipo " + team.length + "/" + meta.neededPeople + "</span>";
   }
 
   function renderSupportInfo(task) {
@@ -707,7 +719,7 @@
     var names = team.length ? team.join(", ") : "Sin apoyo todavía";
     return [
       '<div class="task-support">',
-      '<strong>Apoyo</strong>',
+      '<strong>' + icon("users") + 'Apoyo</strong>',
       "<p>" + escapeHtml(team.length + "/" + meta.neededPeople + " personas") + "</p>",
       "<span>" + escapeHtml(names) + "</span>",
       "</div>"
@@ -720,7 +732,7 @@
 
     return [
       '<div class="pa-updates">',
-      "<strong>Notas de PAs</strong>",
+      "<strong>" + icon("message") + "Notas de PAs</strong>",
       updates
         .map(function (update) {
           return [
