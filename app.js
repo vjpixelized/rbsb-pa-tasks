@@ -59,6 +59,9 @@
     "Pablo Navarro": "1357"
   };
   var MANAGER_AUTH_PREFIX = "rbsb-pa-manager-auth:";
+  var NOTIFIED_PREFIX = "rbsb-pa-notified-tasks:";
+  var NEW_TASK_WINDOW_MS = 3 * 60 * 1000;
+  var POLL_INTERVAL_MS = 12000;
 
   var state = {
     today: todayKey(),
@@ -74,8 +77,8 @@
     paNoteTaskId: "",
     knownTaskIds: {},
     initialLoadDone: false,
-    suppressNextNewTaskNotice: false,
-    noticeTimer: null
+    noticeTimer: null,
+    pollTimer: null
   };
 
   var els = {};
@@ -94,6 +97,7 @@
     renderPaList();
     await initBackend();
     await loadTasks();
+    startPolling();
     if (isCoordinator(state.currentPa) && isManagerAuthenticated(state.currentPa)) {
       state.managerOpen = true;
       els.managerPanel.hidden = false;
@@ -252,7 +256,6 @@
   }
 
   async function loadTasks() {
-    var previousKnown = state.knownTaskIds;
     var nextTasks = [];
 
     if (state.client) {
@@ -270,7 +273,7 @@
       }
 
       nextTasks = (result.data || []).map(normalizeTask).filter(isUserTask);
-      updateTasksFromLoad(nextTasks, previousKnown);
+      updateTasksFromLoad(nextTasks);
       setSyncState("online", "En vivo");
       return;
     }
@@ -280,49 +283,67 @@
     } catch (error) {
       nextTasks = [];
     }
-    updateTasksFromLoad(nextTasks, previousKnown);
+    updateTasksFromLoad(nextTasks);
   }
 
-  function updateTasksFromLoad(nextTasks, previousKnown) {
-    handleNewTaskNotices(nextTasks, previousKnown || {});
+  function updateTasksFromLoad(nextTasks) {
     state.tasks = nextTasks;
-    state.knownTaskIds = indexTaskIds(nextTasks);
     render();
+    handleNewTaskNotices(nextTasks);
   }
 
-  function indexTaskIds(tasks) {
-    return tasks.reduce(function (ids, task) {
-      ids[task.id] = true;
-      return ids;
-    }, {});
-  }
+  function handleNewTaskNotices(nextTasks) {
+    if (!state.currentPa) return;
 
-  function handleNewTaskNotices(nextTasks, previousKnown) {
-    if (!state.initialLoadDone) {
-      state.initialLoadDone = true;
-      return;
-    }
+    var now = Date.now();
+    var notified = readNotifiedIds();
 
-    var newPendingTasks = nextTasks.filter(function (task) {
-      return task.status === "pending" && !previousKnown[task.id];
+    var fresh = nextTasks.filter(function (task) {
+      if (task.status !== "pending") return false;
+      if (task.created_by === state.currentPa) return false;
+      if (notified[task.id]) return false;
+      var created = Date.parse(task.created_at);
+      if (isNaN(created)) return false;
+      return now - created <= NEW_TASK_WINDOW_MS;
     });
 
-    if (!newPendingTasks.length) return;
+    if (!fresh.length) return;
 
-    if (state.suppressNextNewTaskNotice) {
-      state.suppressNextNewTaskNotice = false;
-      newPendingTasks = newPendingTasks.filter(function (task) {
-        return task.created_by !== state.currentPa;
-      });
-      if (!newPendingTasks.length) return;
-    }
+    fresh.forEach(function (task) {
+      notified[task.id] = now;
+    });
+    writeNotifiedIds(notified);
 
-    if (newPendingTasks.length === 1) {
-      showNotice("Nuevo pendiente: " + newPendingTasks[0].title);
+    if (fresh.length === 1) {
+      showNotice("Nuevo pendiente: " + fresh[0].title);
       return;
     }
 
-    showNotice(newPendingTasks.length + " pendientes nuevos");
+    showNotice(fresh.length + " pendientes nuevos");
+  }
+
+  function notifiedKey() {
+    return NOTIFIED_PREFIX + state.today;
+  }
+
+  function readNotifiedIds() {
+    try {
+      var parsed = JSON.parse(readStorage(notifiedKey(), "{}"));
+      return parsed && typeof parsed === "object" ? parsed : {};
+    } catch (error) {
+      return {};
+    }
+  }
+
+  function writeNotifiedIds(ids) {
+    writeStorage(notifiedKey(), JSON.stringify(ids));
+  }
+
+  function startPolling() {
+    window.clearInterval(state.pollTimer);
+    state.pollTimer = window.setInterval(function () {
+      loadTasks();
+    }, POLL_INTERVAL_MS);
   }
 
   function openAddTask() {
@@ -372,7 +393,6 @@
       completed_at: null
     });
 
-    state.suppressNextNewTaskNotice = true;
     await insertTask(task);
     els.newTaskTitle.value = "";
     els.newTaskPeople.value = "1";
@@ -785,6 +805,7 @@
     renderPa();
     renderPaList();
     render();
+    handleNewTaskNotices(state.tasks);
     closeModal("paModal");
   }
 
@@ -1209,12 +1230,16 @@
   function showNotice(message) {
     if (!els.appNotice) return;
     window.clearTimeout(state.noticeTimer);
-    els.appNotice.textContent = message;
+
+    els.appNotice.innerHTML = '<span class="app-notice-text"></span><button type="button" class="app-notice-ok">OK</button>';
+    els.appNotice.querySelector(".app-notice-text").textContent = message;
+    els.appNotice.querySelector(".app-notice-ok").addEventListener("click", hideNotice);
+
     els.appNotice.hidden = false;
     els.appNotice.classList.remove("hide");
     els.appNotice.classList.add("show");
     vibrateNotice();
-    state.noticeTimer = window.setTimeout(hideNotice, 5200);
+    state.noticeTimer = window.setTimeout(hideNotice, 12000);
   }
 
   function hideNotice() {
