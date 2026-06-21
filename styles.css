@@ -6,15 +6,19 @@
   --bg: #f5f7fb;
   --ink: #172033;
   --muted: #687386;
-  --line: #d9e0ea;
+  --line: #e4e9f0;
   --panel: #ffffff;
-  --panel-2: #edf2f7;
+  --panel-2: #f1f4f8;
   --pending: #6b7280;
   --active: #2563eb;
   --done: #12805c;
   --danger: #b42318;
-  --focus: #0f766e;
-  --shadow: 0 10px 28px rgba(23, 32, 51, 0.08);
+  --focus: #0f6e56;
+  --brand: #0f6e56;
+  --on-brand: #ffffff;
+  --shadow: 0 6px 18px rgba(23, 32, 51, 0.06);
+  --radius: 14px;
+  --radius-sm: 10px;
 }
 
 html {
@@ -45,16 +49,16 @@ button {
 
 button,
 .task-card,
-.quick-add,
 .manager-panel,
-.modal-card {
+.modal-card,
+.tab-btn {
   transition:
-    transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
-    opacity 180ms ease,
-    border-color 180ms ease,
-    box-shadow 180ms ease,
-    background-color 180ms ease,
-    color 180ms ease;
+    transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease;
 }
 
 button:active {
@@ -65,63 +69,69 @@ button:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  outline: 3px solid rgba(15, 118, 110, 0.28);
+  outline: 3px solid rgba(15, 110, 86, 0.3);
   outline-offset: 2px;
 }
 
 @keyframes soft-rise {
   from {
     opacity: 0;
-    transform: translateY(10px) scale(0.99);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
   }
 }
 
 @keyframes sheet-up {
   from {
     opacity: 0;
-    transform: translateY(18px) scale(0.98);
+    transform: translateY(16px);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
   }
 }
 
 @keyframes task-pop {
-  0% {
+  from {
     opacity: 0;
-    transform: translateY(12px) scale(0.985);
+    transform: translateY(8px);
   }
-  70% {
+  to {
     opacity: 1;
-    transform: translateY(-1px) scale(1.002);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
   }
 }
 
-@keyframes complete-glow {
-  0% {
-    box-shadow: 0 0 0 rgba(18, 128, 92, 0), var(--shadow);
+@keyframes notice-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
   }
-  45% {
-    box-shadow: 0 0 0 4px rgba(18, 128, 92, 0.12), var(--shadow);
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
-  100% {
-    box-shadow: 0 0 0 rgba(18, 128, 92, 0), var(--shadow);
+}
+
+@keyframes notice-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-6px);
   }
 }
 
 .app-shell {
   width: min(100%, 760px);
   margin: 0 auto;
-  padding: 0 12px 32px;
+  padding: 0 14px 96px;
 }
 
 .topbar {
@@ -129,12 +139,12 @@ textarea:focus-visible {
   top: 0;
   z-index: 10;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  margin: 0 -12px;
-  padding: max(14px, env(safe-area-inset-top)) 12px 12px;
-  background: rgba(245, 247, 251, 0.94);
+  margin: 0 -14px;
+  padding: max(14px, env(safe-area-inset-top)) 14px 12px;
+  background: rgba(245, 247, 251, 0.92);
   border-bottom: 1px solid var(--line);
   backdrop-filter: blur(14px);
 }
@@ -144,12 +154,11 @@ textarea:focus-visible {
 }
 
 .eyebrow {
-  margin: 0 0 2px;
-  color: var(--focus);
-  font-size: 0.72rem;
-  font-weight: 850;
-  letter-spacing: 0;
-  text-transform: uppercase;
+  margin: 0 0 1px;
+  color: var(--brand);
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
 h1,
@@ -159,18 +168,20 @@ h3 {
 }
 
 h1 {
-  font-size: 1.45rem;
+  font-size: 1.4rem;
+  font-weight: 600;
   line-height: 1.1;
 }
 
 .date-line {
-  margin: 4px 0 0;
+  margin: 3px 0 0;
   color: var(--muted);
   font-size: 0.82rem;
 }
 
 .top-actions {
   display: flex;
+  flex: 0 0 auto;
   gap: 8px;
 }
 
@@ -178,27 +189,45 @@ h1 {
 .icon-btn,
 .plain-btn {
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: var(--panel);
   color: var(--ink);
-  font-weight: 850;
+  font-weight: 500;
 }
 
 .theme-btn,
 .icon-btn {
-  height: 42px;
-  min-width: 42px;
-  padding: 0 11px;
-  box-shadow: var(--shadow);
+  height: 40px;
+  min-width: 40px;
+  padding: 0 12px;
+  color: var(--muted);
+  font-size: 0.82rem;
 }
 
 .theme-btn:hover,
 .icon-btn:hover,
 .plain-btn:hover,
 .pa-button:hover {
-  border-color: rgba(15, 118, 110, 0.35);
-  box-shadow: 0 12px 30px rgba(23, 32, 51, 0.12);
-  transform: translateY(-1px);
+  border-color: var(--brand);
+}
+
+.app-notice {
+  margin: 12px 0 0;
+  padding: 11px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--brand);
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 500;
+  box-shadow: var(--shadow);
+}
+
+.app-notice.show {
+  animation: notice-in 160ms ease-out both;
+}
+
+.app-notice.hide {
+  animation: notice-out 160ms ease-in both;
 }
 
 .operator-panel {
@@ -210,68 +239,61 @@ h1 {
 
 .pa-button {
   min-width: 0;
-  padding: 12px 14px;
+  padding: 10px 14px;
   text-align: left;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: var(--panel);
   color: var(--ink);
-  box-shadow: var(--shadow);
 }
 
 .pa-label {
   display: block;
-  margin-bottom: 2px;
+  margin-bottom: 1px;
   color: var(--muted);
   font-size: 0.72rem;
-  font-weight: 750;
-  text-transform: uppercase;
+  font-weight: 500;
 }
 
 .pa-button strong {
   display: block;
   overflow: hidden;
-  font-size: 1rem;
+  font-size: 0.98rem;
+  font-weight: 500;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .sync-pill {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  min-width: 76px;
-  padding: 0 10px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
+  gap: 6px;
+  min-width: 74px;
+  padding: 0 12px;
+  border-radius: 999px;
   background: var(--panel-2);
   color: var(--muted);
   font-size: 0.74rem;
-  font-weight: 850;
-  text-align: center;
+  font-weight: 500;
+}
+
+.sync-pill::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: 0 0 auto;
 }
 
 .sync-pill.online {
-  border-color: rgba(18, 128, 92, 0.25);
   background: rgba(18, 128, 92, 0.1);
   color: var(--done);
 }
 
 .sync-pill.error {
-  border-color: rgba(180, 35, 24, 0.25);
   background: rgba(180, 35, 24, 0.1);
   color: var(--danger);
-}
-
-.quick-add,
-.manager-panel {
-  margin-bottom: 14px;
-  padding: 12px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--panel);
-  box-shadow: var(--shadow);
-  animation: soft-rise 220ms ease-out both;
 }
 
 label {
@@ -279,13 +301,7 @@ label {
   margin-bottom: 6px;
   color: var(--muted);
   font-size: 0.78rem;
-  font-weight: 850;
-}
-
-.quick-add-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 8px;
+  font-weight: 500;
 }
 
 input,
@@ -293,7 +309,7 @@ select,
 textarea {
   width: 100%;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: #fff;
   color: var(--ink);
   outline: none;
@@ -301,7 +317,7 @@ textarea {
 
 input,
 select {
-  height: 44px;
+  height: 46px;
 }
 
 input {
@@ -309,138 +325,117 @@ input {
 }
 
 select {
-  margin-top: 8px;
   padding: 0 10px;
 }
 
 textarea {
-  min-height: 94px;
-  margin-top: 8px;
+  min-height: 96px;
   padding: 10px 12px;
   resize: vertical;
-  line-height: 1.35;
+  line-height: 1.4;
 }
 
 input:focus,
 select:focus,
 textarea:focus {
-  border-color: var(--focus);
-  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgba(15, 110, 86, 0.14);
 }
 
 .notes-label {
-  margin-top: 10px;
+  margin-top: 12px;
 }
 
-.quick-add button,
 .modal-actions button,
 .task-actions button {
-  min-height: 44px;
+  min-height: 46px;
   padding: 0 14px;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   color: #fff;
-  font-weight: 900;
+  font-weight: 500;
 }
 
-.quick-add button,
 .modal-actions button {
-  background: var(--focus);
+  background: var(--brand);
+  color: var(--on-brand);
 }
 
-.quick-add button:hover,
 .modal-actions button:hover,
 .task-actions button:hover {
-  filter: brightness(1.05);
-  box-shadow: 0 10px 22px rgba(23, 32, 51, 0.14);
-  transform: translateY(-1px);
+  filter: brightness(1.04);
 }
 
-.locked-note {
-  margin: 0;
-  padding: 14px;
-  border: 1px dashed var(--line);
-  border-radius: 8px;
-  background: var(--panel);
-  color: var(--muted);
-  font-weight: 800;
-  text-align: center;
+.add-fab {
+  position: fixed;
+  right: 16px;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 58px;
+  height: 58px;
+  padding-bottom: 3px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--brand);
+  color: var(--on-brand);
+  font-size: 30px;
+  line-height: 1;
+  box-shadow: 0 8px 22px rgba(15, 110, 86, 0.4);
+}
+
+.add-fab[hidden] {
+  display: none;
+}
+
+.add-fab:hover {
+  filter: brightness(1.05);
 }
 
 .view-tabs {
-  position: sticky;
-  top: 72px;
-  z-index: 8;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 7px;
-  margin: 0 -2px 14px;
-  padding: 8px 2px;
-  background: rgba(245, 247, 251, 0.94);
-  backdrop-filter: blur(14px);
+  display: flex;
+  gap: 4px;
+  margin: 0 0 14px;
+  padding: 4px;
+  border-radius: var(--radius);
+  background: var(--panel-2);
 }
 
 .tab-btn {
-  position: relative;
-  min-height: 52px;
-  padding: 6px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--panel);
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 54px;
+  padding: 6px 4px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
   color: var(--muted);
-  font-size: 0.72rem;
-  font-weight: 900;
-  overflow: hidden;
-  transition:
-    transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
-    background-color 180ms ease,
-    border-color 180ms ease,
-    color 180ms ease,
-    box-shadow 180ms ease;
-}
-
-.tab-btn:hover {
-  border-color: rgba(15, 118, 110, 0.26);
-  transform: translateY(-1px);
-}
-
-.tab-btn::after {
-  content: "";
-  position: absolute;
-  inset: auto 10px 6px;
-  height: 3px;
-  border-radius: 999px;
-  background: currentColor;
-  opacity: 0;
-  transform: scaleX(0.5);
-  transition:
-    opacity 180ms ease,
-    transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  font-size: 0.74rem;
+  font-weight: 500;
 }
 
 .tab-btn span {
   display: block;
-  margin-bottom: 2px;
   color: var(--ink);
-  font-size: 1.05rem;
+  font-size: 1.1rem;
+  font-weight: 600;
   line-height: 1;
 }
 
 .tab-btn.active {
-  border-color: var(--ink);
-  background: var(--ink);
-  color: #fff;
-  box-shadow: 0 10px 24px rgba(23, 32, 51, 0.16);
-  transform: translateY(-1px);
+  background: var(--brand);
+  color: var(--on-brand);
+  box-shadow: var(--shadow);
 }
 
 .tab-btn.active span {
-  color: #fff;
-}
-
-.tab-btn.active::after {
-  opacity: 0.72;
-  transform: scaleX(1);
+  color: var(--on-brand);
 }
 
 .task-list {
@@ -449,48 +444,24 @@ textarea:focus {
 }
 
 .area-title {
-  margin: 8px 2px 0;
+  margin: 10px 2px 0;
   color: var(--muted);
-  font-size: 0.78rem;
-  font-weight: 900;
-  text-transform: uppercase;
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
 }
 
 .task-card {
   border: 1px solid var(--line);
-  border-left: 5px solid var(--pending);
-  border-radius: 8px;
+  border-radius: var(--radius);
   background: var(--panel);
   box-shadow: var(--shadow);
   overflow: hidden;
-  animation: task-pop 240ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
-  transition:
-    transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
-    border-color 180ms ease,
-    border-left-color 220ms ease,
-    box-shadow 180ms ease,
-    background-color 180ms ease;
-}
-
-.task-card:hover {
-  border-color: rgba(15, 118, 110, 0.22);
-  box-shadow: 0 14px 34px rgba(23, 32, 51, 0.11);
-  transform: translateY(-1px);
-}
-
-.task-card.active {
-  border-left-color: var(--active);
-}
-
-.task-card.done {
-  border-left-color: var(--done);
-  animation:
-    task-pop 240ms cubic-bezier(0.2, 0.8, 0.2, 1) both,
-    complete-glow 700ms ease-out both;
+  animation: task-pop 200ms ease-out both;
 }
 
 .task-main {
-  padding: 13px;
+  padding: 14px;
 }
 
 .task-top {
@@ -503,36 +474,35 @@ textarea:focus {
 .task-title {
   overflow-wrap: anywhere;
   font-size: 1rem;
-  line-height: 1.28;
+  font-weight: 500;
+  line-height: 1.3;
 }
 
 .status-badge {
+  display: inline-flex;
   flex: 0 0 auto;
-  padding: 4px 8px;
-  border-radius: 999px;
-  background: rgba(107, 114, 128, 0.12);
+  align-items: center;
+  gap: 6px;
   color: var(--pending);
-  font-size: 0.68rem;
-  font-weight: 900;
-  text-transform: uppercase;
+  font-size: 0.74rem;
+  font-weight: 500;
   white-space: nowrap;
-  transition:
-    background-color 180ms ease,
-    color 180ms ease,
-    transform 180ms ease;
 }
 
-.task-card:hover .status-badge {
-  transform: translateY(-1px);
+.status-badge::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: 0 0 auto;
 }
 
 .status-badge.active {
-  background: rgba(37, 99, 235, 0.12);
   color: var(--active);
 }
 
 .status-badge.done {
-  background: rgba(18, 128, 92, 0.12);
   color: var(--done);
 }
 
@@ -544,37 +514,34 @@ textarea:focus {
 }
 
 .meta-chip {
-  padding: 5px 8px;
+  padding: 5px 10px;
   border-radius: 999px;
   background: var(--panel-2);
   color: var(--muted);
-  font-size: 0.72rem;
-  font-weight: 800;
+  font-size: 0.74rem;
+  font-weight: 500;
 }
 
 .task-detail {
-  margin-top: 11px;
-  padding: 10px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
   background: var(--panel-2);
 }
 
 .task-detail strong {
   display: block;
-  margin-bottom: 5px;
+  margin-bottom: 4px;
   color: var(--muted);
-  font-size: 0.7rem;
-  font-weight: 900;
-  text-transform: uppercase;
+  font-size: 0.72rem;
+  font-weight: 600;
 }
 
 .task-detail p {
   margin: 0;
   color: var(--ink);
-  font-size: 0.84rem;
-  font-weight: 650;
-  line-height: 1.38;
+  font-size: 0.88rem;
+  line-height: 1.4;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
@@ -582,46 +549,42 @@ textarea:focus {
 .task-support,
 .pa-updates {
   margin-top: 10px;
-  padding: 10px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
   background: rgba(37, 99, 235, 0.07);
 }
 
 .task-support strong,
 .pa-updates strong {
   display: block;
-  margin-bottom: 5px;
+  margin-bottom: 4px;
   color: var(--muted);
-  font-size: 0.7rem;
-  font-weight: 900;
-  text-transform: uppercase;
+  font-size: 0.72rem;
+  font-weight: 600;
 }
 
 .task-support p {
-  margin: 0 0 4px;
+  margin: 0 0 2px;
   color: var(--ink);
-  font-size: 0.84rem;
-  font-weight: 850;
+  font-size: 0.88rem;
+  font-weight: 500;
 }
 
 .task-support span {
   color: var(--muted);
-  font-size: 0.8rem;
-  font-weight: 750;
+  font-size: 0.82rem;
   overflow-wrap: anywhere;
 }
 
 .pa-updates {
-  background: rgba(15, 118, 110, 0.08);
+  background: rgba(15, 110, 86, 0.08);
 }
 
 .pa-updates p {
   margin: 8px 0 0;
   color: var(--ink);
-  font-size: 0.82rem;
-  font-weight: 650;
-  line-height: 1.35;
+  font-size: 0.86rem;
+  line-height: 1.4;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
@@ -631,20 +594,19 @@ textarea:focus {
 }
 
 .pa-updates b {
-  font-weight: 900;
+  font-weight: 500;
 }
 
 .pa-updates span {
   color: var(--muted);
-  font-size: 0.74rem;
-  font-weight: 750;
+  font-size: 0.76rem;
 }
 
 .task-actions {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
   gap: 8px;
-  padding: 0 13px 13px;
+  padding: 0 14px 14px;
 }
 
 .task-actions.single {
@@ -656,7 +618,8 @@ textarea:focus {
 }
 
 .task-actions button.primary {
-  background: var(--active);
+  background: var(--brand);
+  color: var(--on-brand);
 }
 
 .task-actions button.success {
@@ -664,8 +627,8 @@ textarea:focus {
 }
 
 .task-actions button.secondary {
-  border: 1px solid rgba(15, 118, 110, 0.3);
-  background: rgba(15, 118, 110, 0.12);
+  border: 1px solid rgba(15, 110, 86, 0.32);
+  background: rgba(15, 110, 86, 0.1);
   color: var(--focus);
 }
 
@@ -680,18 +643,28 @@ textarea:focus {
 
 .task-actions button:disabled {
   cursor: not-allowed;
-  opacity: 0.78;
+  opacity: 0.7;
   transform: none;
 }
 
 .empty-state,
 .section-empty {
-  padding: 26px 16px;
+  padding: 28px 16px;
   border: 1px dashed var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius);
   background: var(--panel);
   color: var(--muted);
   text-align: center;
+}
+
+.manager-panel {
+  margin: 14px 0 0;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  animation: soft-rise 200ms ease-out both;
 }
 
 .manager-head {
@@ -703,11 +676,12 @@ textarea:focus {
 
 .manager-head h2 {
   font-size: 1.1rem;
+  font-weight: 600;
 }
 
 .plain-btn {
   min-height: 36px;
-  padding: 0 10px;
+  padding: 0 12px;
   color: var(--focus);
 }
 
@@ -719,8 +693,7 @@ textarea:focus {
 
 .manager-stat {
   padding: 12px 8px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: var(--panel-2);
   text-align: center;
 }
@@ -728,20 +701,21 @@ textarea:focus {
 .manager-stat span {
   display: block;
   color: var(--ink);
-  font-size: 1.28rem;
-  font-weight: 900;
+  font-size: 1.3rem;
+  font-weight: 600;
 }
 
 .manager-stat small {
   color: var(--muted);
-  font-size: 0.7rem;
-  font-weight: 850;
+  font-size: 0.72rem;
+  font-weight: 500;
 }
 
 .manager-title {
-  margin: 16px 0 8px;
+  margin: 18px 0 8px;
   color: var(--ink);
   font-size: 0.94rem;
+  font-weight: 600;
 }
 
 .top-list,
@@ -752,9 +726,8 @@ textarea:focus {
 
 .top-row,
 .manager-row {
-  padding: 10px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
   background: var(--panel-2);
 }
 
@@ -769,16 +742,16 @@ textarea:focus {
 .manager-row strong {
   display: block;
   color: var(--ink);
-  font-size: 0.86rem;
+  font-size: 0.88rem;
+  font-weight: 500;
 }
 
 .top-row span,
 .manager-row span {
   display: block;
-  margin-top: 4px;
+  margin-top: 3px;
   color: var(--muted);
-  font-size: 0.76rem;
-  font-weight: 750;
+  font-size: 0.78rem;
 }
 
 .modal {
@@ -788,8 +761,8 @@ textarea:focus {
   display: none;
   align-items: flex-end;
   justify-content: center;
-  padding: 18px;
-  background: rgba(23, 32, 51, 0.52);
+  padding: 16px;
+  background: rgba(23, 32, 51, 0.5);
 }
 
 .modal.show {
@@ -798,10 +771,10 @@ textarea:focus {
 
 .modal-card {
   width: min(100%, 520px);
-  max-height: 78dvh;
+  max-height: 84dvh;
   overflow: auto;
-  padding: 16px;
-  border-radius: 8px;
+  padding: 18px;
+  border-radius: var(--radius);
   background: var(--panel);
   box-shadow: 0 24px 60px rgba(23, 32, 51, 0.28);
   animation: sheet-up 180ms ease-out both;
@@ -817,6 +790,7 @@ textarea:focus {
 
 .modal-head h2 {
   font-size: 1.1rem;
+  font-weight: 600;
 }
 
 .pa-list {
@@ -825,34 +799,35 @@ textarea:focus {
 }
 
 .pa-choice {
-  min-height: 48px;
-  padding: 0 12px;
+  min-height: 50px;
+  padding: 0 14px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: var(--panel-2);
   color: var(--ink);
   text-align: left;
-  font-weight: 850;
+  font-weight: 500;
 }
 
 .pa-choice.active {
-  border-color: var(--focus);
-  background: rgba(15, 118, 110, 0.1);
+  border-color: var(--brand);
+  background: rgba(15, 110, 86, 0.1);
   color: var(--focus);
 }
 
-[data-theme="dark"] .view-tabs {
-  background: rgba(13, 17, 23, 0.94);
+.modal-actions {
+  margin-top: 16px;
 }
 
-[data-theme="dark"] .tab-btn.active {
-  border-color: var(--active);
-  background: var(--active);
-  color: #0d1117;
+.modal-actions button {
+  width: 100%;
 }
 
-[data-theme="dark"] .tab-btn.active span {
-  color: #0d1117;
+.form-error {
+  margin: 8px 0 0;
+  color: var(--danger);
+  font-size: 0.82rem;
+  font-weight: 500;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -865,32 +840,9 @@ textarea:focus {
   }
 }
 
-.modal-actions {
-  margin-top: 12px;
-}
-
-.modal-actions button {
-  width: 100%;
-}
-
-.form-error {
-  margin: 8px 0 0;
-  color: var(--danger);
-  font-size: 0.82rem;
-  font-weight: 800;
-}
-
 @media (max-width: 520px) {
-  .view-tabs {
-    top: 68px;
-  }
-
   .tab-btn {
-    font-size: 0.66rem;
-  }
-
-  .quick-add-row {
-    grid-template-columns: 1fr;
+    font-size: 0.7rem;
   }
 
   .manager-grid {

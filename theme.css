@@ -1,41 +1,22 @@
-.top-actions {
-  display: flex;
-  align-items: center;
-  flex: 0 0 auto;
-  gap: 8px;
-}
-
-.theme-btn {
-  height: 42px;
-  min-width: 58px;
-  padding: 0 12px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--panel);
-  color: var(--muted);
-  font-size: 0.78rem;
-  font-weight: 850;
-  box-shadow: var(--shadow);
-}
-
 [data-theme="dark"] {
   --bg: #0d1117;
   --ink: #e6edf3;
   --muted: #8b949e;
-  --line: #30363d;
+  --line: #2a313c;
   --panel: #161b22;
   --panel-2: #1c2330;
   --pending: #8b949e;
   --active: #58a6ff;
-  --blocked: #d29922;
   --done: #3fb950;
   --danger: #f85149;
-  --focus: #58a6ff;
-  --shadow: 0 14px 34px rgba(0, 0, 0, 0.28);
+  --focus: #5dcaa5;
+  --brand: #2ea88a;
+  --on-brand: #04261f;
+  --shadow: 0 10px 26px rgba(0, 0, 0, 0.3);
 }
 
 [data-theme="dark"] .topbar {
-  background: rgba(13, 17, 23, 0.94);
+  background: rgba(13, 17, 23, 0.92);
 }
 
 [data-theme="dark"] input,
@@ -44,9 +25,13 @@
   background: #0d1117;
 }
 
-[data-theme="dark"] .task-note {
-  background: rgba(210, 153, 34, 0.14);
-  color: #f2cc60;
+[data-theme="dark"] .app-notice {
+  color: var(--on-brand);
+}
+
+[data-theme="dark"] .task-actions button.success,
+[data-theme="dark"] .task-actions button.danger {
+  color: #04261f;
 }
 
 [data-theme="dark"] .modal {
