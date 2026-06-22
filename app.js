@@ -2,6 +2,7 @@
   var PA_LIST = [
     "Abraham Soto",
     "Pablo Navarro",
+    "Yazz Portugal",
     "Jacob Rodriguez",
     "Uncas Castillo",
     "Mickey Maruri",
@@ -56,7 +57,8 @@
   var TASK_META_PREFIX = "pa-task-meta:";
   var COORDINATOR_PINS = {
     "Abraham Soto": "2468",
-    "Pablo Navarro": "1357"
+    "Pablo Navarro": "1357",
+    "Yazz Portugal": "3690"
   };
   var MANAGER_AUTH_PREFIX = "rbsb-pa-manager-auth:";
   var NOTIFIED_PREFIX = "rbsb-pa-notified-tasks:";
