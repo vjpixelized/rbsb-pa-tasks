@@ -706,7 +706,7 @@
         .from(state.table)
         .select("*")
         .eq("work_date", state.today)
-        .eq("fixed_key", FALTANTE_KEY)
+        .like("fixed_key", FALTANTE_KEY + "%")
         .order("created_at", { ascending: true });
 
       if (result.error) {
@@ -735,10 +735,12 @@
   }
 
   async function insertFaltante(text, dept, reqBy) {
+    var localId = makeLocalId();
+    var uniqueKey = FALTANTE_KEY + ":" + localId;
     var item = normalizeTask({
-      id: makeLocalId(),
+      id: localId,
       work_date: state.today,
-      fixed_key: FALTANTE_KEY,
+      fixed_key: uniqueKey,
       title: text,
       area: dept || "General",
       detail: reqBy || "",
@@ -752,7 +754,7 @@
 
     if (state.client) {
       var row = stripLocalOnly(item);
-      row.fixed_key = FALTANTE_KEY;
+      row.fixed_key = uniqueKey;
       var result = await state.client.from(state.table).insert(row);
       if (result.error) {
         console.error(result.error);
