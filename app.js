@@ -62,6 +62,48 @@
   var NOTIFIED_PREFIX = "rbsb-pa-notified-tasks:";
   var NEW_TASK_WINDOW_MS = 3 * 60 * 1000;
   var POLL_INTERVAL_MS = 12000;
+  var FALTANTE_KEY = "faltante";
+  var FALTANTE_GLOSSARY = {
+    "agua": "water",
+    "aguas": "water",
+    "agua natural": "still water",
+    "aguas naturales": "still water",
+    "hielo": "ice",
+    "hielos": "ice",
+    "vaso": "cup",
+    "vasos": "cups",
+    "servilleta": "napkin",
+    "servilletas": "napkins",
+    "cafe": "coffee",
+    "café": "coffee",
+    "azucar": "sugar",
+    "azúcar": "sugar",
+    "leche": "milk",
+    "cuchara": "spoon",
+    "cucharas": "spoons",
+    "tenedor": "fork",
+    "tenedores": "forks",
+    "plato": "plate",
+    "platos": "plates",
+    "popote": "straw",
+    "popotes": "straws",
+    "refresco": "soda",
+    "refrescos": "sodas",
+    "fruta": "fruit",
+    "hielera": "cooler",
+    "bolsa de basura": "trash bag",
+    "bolsas de basura": "trash bags",
+    "papel de baño": "toilet paper",
+    "toalla": "towel",
+    "toallas": "towels",
+    "toallas de papel": "paper towels",
+    "cinta": "tape",
+    "cinta gaffer": "gaffer tape",
+    "pila": "battery",
+    "pilas": "batteries",
+    "extension": "extension cord",
+    "extensión": "extension cord"
+  };
 
   var state = {
     today: todayKey(),
@@ -78,7 +120,10 @@
     knownTaskIds: {},
     initialLoadDone: false,
     noticeTimer: null,
-    pollTimer: null
+    pollTimer: null,
+    faltantes: [],
+    faltantesLang: "es",
+    translating: false
   };
 
   var els = {};
@@ -97,6 +142,7 @@
     renderPaList();
     await initBackend();
     await loadTasks();
+    await loadFaltantes();
     startPolling();
     if (isCoordinator(state.currentPa) && isManagerAuthenticated(state.currentPa)) {
       state.managerOpen = true;
@@ -142,6 +188,12 @@
     els.paNoteModal = document.getElementById("paNoteModal");
     els.paNoteForm = document.getElementById("paNoteForm");
     els.paNoteText = document.getElementById("paNoteText");
+    els.faltantesView = document.getElementById("faltantesView");
+    els.faltantesCount = document.getElementById("faltantesCount");
+    els.faltanteModal = document.getElementById("faltanteModal");
+    els.faltanteForm = document.getElementById("faltanteForm");
+    els.faltanteText = document.getElementById("faltanteText");
+    els.faltanteQty = document.getElementById("faltanteQty");
   }
 
   function bindEvents() {
@@ -149,7 +201,7 @@
       openPaModal(false);
     });
 
-    els.refreshBtn.addEventListener("click", loadTasks);
+    els.refreshBtn.addEventListener("click", refreshAll);
     els.addTaskForm.addEventListener("submit", handleAddTask);
     els.taskList.addEventListener("click", handleTaskAction);
 
@@ -157,6 +209,14 @@
     if (els.addTaskModal) {
       els.addTaskModal.addEventListener("click", function (event) {
         if (event.target === els.addTaskModal) closeModal("addTaskModal");
+      });
+    }
+
+    if (els.faltanteForm) els.faltanteForm.addEventListener("submit", handleAddFaltante);
+    if (els.faltantesView) els.faltantesView.addEventListener("click", handleFaltantesAction);
+    if (els.faltanteModal) {
+      els.faltanteModal.addEventListener("click", function (event) {
+        if (event.target === els.faltanteModal) closeModal("faltanteModal");
       });
     }
 
@@ -250,9 +310,14 @@
           table: state.table,
           filter: "work_date=eq." + state.today
         },
-        loadTasks
+        refreshAll
       )
       .subscribe();
+  }
+
+  function refreshAll() {
+    loadTasks();
+    loadFaltantes();
   }
 
   async function loadTasks() {
@@ -341,9 +406,7 @@
 
   function startPolling() {
     window.clearInterval(state.pollTimer);
-    state.pollTimer = window.setInterval(function () {
-      loadTasks();
-    }, POLL_INTERVAL_MS);
+    state.pollTimer = window.setInterval(refreshAll, POLL_INTERVAL_MS);
   }
 
   function openAddTask() {
@@ -617,16 +680,337 @@
     render();
   }
 
+  async function loadFaltantes() {
+    if (state.client) {
+      var result = await state.client
+        .from(state.table)
+        .select("*")
+        .eq("work_date", state.today)
+        .eq("fixed_key", FALTANTE_KEY)
+        .order("created_at", { ascending: true });
+
+      if (result.error) {
+        console.error(result.error);
+        return;
+      }
+      state.faltantes = (result.data || []).map(normalizeTask);
+    } else {
+      try {
+        state.faltantes = JSON.parse(readStorage(faltanteStorageKey(), "[]")).map(normalizeTask);
+      } catch (error) {
+        state.faltantes = [];
+      }
+    }
+
+    renderSummary();
+    if (state.filter === "faltantes") renderFaltantes();
+  }
+
+  function faltanteStorageKey() {
+    return STORAGE_PREFIX + ":faltantes:" + state.today;
+  }
+
+  function saveLocalFaltantes() {
+    writeStorage(faltanteStorageKey(), JSON.stringify(state.faltantes));
+  }
+
+  async function insertFaltante(text, qty) {
+    var item = normalizeTask({
+      id: makeLocalId(),
+      work_date: state.today,
+      fixed_key: FALTANTE_KEY,
+      title: text,
+      area: "Faltante",
+      detail: qty,
+      status: "pending",
+      assignee: "",
+      notes: "",
+      created_by: state.currentPa,
+      created_at: nowIso(),
+      updated_at: nowIso()
+    });
+
+    if (state.client) {
+      var row = stripLocalOnly(item);
+      row.fixed_key = FALTANTE_KEY;
+      var result = await state.client.from(state.table).insert(row);
+      if (result.error) {
+        console.error(result.error);
+        alert("No se pudo guardar el faltante.");
+        return;
+      }
+    } else {
+      state.faltantes.push(item);
+      saveLocalFaltantes();
+    }
+    await loadFaltantes();
+  }
+
+  async function patchFaltante(id, patch) {
+    patch.updated_at = nowIso();
+    if (state.client) {
+      var result = await state.client.from(state.table).update(patch).eq("id", id);
+      if (result.error) {
+        console.error(result.error);
+        return;
+      }
+      await loadFaltantes();
+    } else {
+      state.faltantes = state.faltantes.map(function (f) {
+        return f.id === id ? normalizeTask(Object.assign({}, f, patch)) : f;
+      });
+      saveLocalFaltantes();
+      renderFaltantes();
+    }
+  }
+
+  async function saveFaltanteEn(id, en) {
+    state.faltantes = state.faltantes.map(function (f) {
+      return f.id === id ? Object.assign({}, f, { notes: en }) : f;
+    });
+    if (state.client) {
+      try {
+        await state.client.from(state.table).update({ notes: en, updated_at: nowIso() }).eq("id", id);
+      } catch (error) {
+        console.warn("No se pudo guardar la traducción", error);
+      }
+    } else {
+      saveLocalFaltantes();
+    }
+  }
+
+  async function handleAddFaltante(event) {
+    event.preventDefault();
+    if (!requirePa()) return;
+
+    var text = els.faltanteText.value.trim();
+    if (!text) {
+      els.faltanteText.focus();
+      return;
+    }
+    var qty = els.faltanteQty.value.trim();
+
+    await insertFaltante(text, qty);
+    els.faltanteText.value = "";
+    els.faltanteQty.value = "";
+    closeModal("faltanteModal");
+    showNotice("Faltante reportado: " + text);
+  }
+
+  function openFaltanteModal() {
+    if (!requirePa()) return;
+    openModal("faltanteModal");
+    setTimeout(function () {
+      els.faltanteText.focus();
+    }, 40);
+  }
+
+  function renderFaltantes() {
+    if (!els.faltantesView) return;
+
+    var html = '<button type="button" class="faltante-report" data-fact="report">' + icon("plus") + "Reportar faltante</button>";
+
+    if (!canManageTasks()) {
+      html += '<div class="faltante-note">Lo que reportes lo revisan los coordinadores.</div>';
+      els.faltantesView.innerHTML = html;
+      return;
+    }
+
+    var en = state.faltantesLang === "en";
+    var active = state.faltantes.filter(function (f) {
+      return f.status !== "done";
+    });
+    var resolved = state.faltantes.filter(function (f) {
+      return f.status === "done";
+    });
+
+    html += '<div class="faltante-controls">';
+    html += '<div class="lang-toggle">';
+    html += '<button type="button" class="lang-btn' + (en ? "" : " active") + '" data-fact="lang-es">ES</button>';
+    html += '<button type="button" class="lang-btn' + (en ? " active" : "") + '" data-fact="lang-en">EN</button>';
+    html += "</div>";
+    html += '<button type="button" class="faltante-copy" data-fact="copy">' + icon("copy") + (en ? "Copy list" : "Copiar lista") + "</button>";
+    html += "</div>";
+
+    if (state.translating) {
+      html += '<div class="faltante-note">Traduciendo…</div>';
+    }
+
+    if (!active.length && !resolved.length) {
+      html += '<div class="empty-state">No hay faltantes hoy.</div>';
+      els.faltantesView.innerHTML = html;
+      return;
+    }
+
+    html += '<div class="faltante-list">';
+    active.forEach(function (f) {
+      html += renderFaltanteRow(f, false);
+    });
+    resolved.forEach(function (f) {
+      html += renderFaltanteRow(f, true);
+    });
+    html += "</div>";
+
+    els.faltantesView.innerHTML = html;
+  }
+
+  function faltanteDisplayText(f) {
+    if (state.faltantesLang === "en") {
+      var en = String(f.notes || "").trim();
+      return en || f.title;
+    }
+    return f.title;
+  }
+
+  function renderFaltanteRow(f, resolved) {
+    var qty = String(f.detail || "").trim();
+    return [
+      '<div class="faltante-row' + (resolved ? " resolved" : "") + '" data-fact="toggle" data-id="' + escapeHtml(f.id) + '">',
+      '<span class="faltante-check">' + icon(resolved ? "check" : "circle") + "</span>",
+      '<span class="faltante-item">' + escapeHtml(faltanteDisplayText(f)) + (qty ? ' <span class="faltante-qty">· ' + escapeHtml(qty) + "</span>" : "") + "</span>",
+      '<span class="faltante-who">' + escapeHtml(firstName(f.created_by)) + "</span>",
+      "</div>"
+    ].join("");
+  }
+
+  function firstName(name) {
+    return String(name || "").trim().split(" ")[0] || "";
+  }
+
+  async function handleFaltantesAction(event) {
+    var el = event.target.closest("[data-fact]");
+    if (!el) return;
+    var fact = el.dataset.fact;
+
+    if (fact === "report") {
+      openFaltanteModal();
+      return;
+    }
+    if (fact === "lang-es") {
+      state.faltantesLang = "es";
+      renderFaltantes();
+      return;
+    }
+    if (fact === "lang-en") {
+      await ensureTranslations();
+      state.faltantesLang = "en";
+      renderFaltantes();
+      return;
+    }
+    if (fact === "copy") {
+      copyFaltantes();
+      return;
+    }
+    if (fact === "toggle") {
+      if (!canManageTasks()) return;
+      var target = state.faltantes.find(function (f) {
+        return f.id === el.dataset.id;
+      });
+      if (!target) return;
+      await patchFaltante(target.id, { status: target.status === "done" ? "pending" : "done" });
+    }
+  }
+
+  async function ensureTranslations() {
+    var pending = state.faltantes.filter(function (f) {
+      return f.status !== "done" && !String(f.notes || "").trim();
+    });
+    if (!pending.length) return;
+
+    state.translating = true;
+    renderFaltantes();
+
+    for (var i = 0; i < pending.length; i++) {
+      var en = await translateText(pending[i].title);
+      await saveFaltanteEn(pending[i].id, en);
+    }
+
+    state.translating = false;
+  }
+
+  async function translateText(text) {
+    var raw = String(text || "").trim();
+    if (!raw) return "";
+
+    var key = raw.toLowerCase();
+    if (FALTANTE_GLOSSARY[key]) return FALTANTE_GLOSSARY[key];
+
+    try {
+      var url = "https://api.mymemory.translated.net/get?q=" + encodeURIComponent(raw) + "&langpair=es|en";
+      var response = await fetch(url);
+      var data = await response.json();
+      var translated = data && data.responseData && data.responseData.translatedText;
+      if (!translated) return raw;
+      if (/MYMEMORY WARNING|PLEASE SELECT|INVALID/i.test(translated)) return raw;
+      return translated;
+    } catch (error) {
+      return raw;
+    }
+  }
+
+  function copyFaltantes() {
+    var active = state.faltantes.filter(function (f) {
+      return f.status !== "done";
+    });
+    var header = "FALTANTES — " + (els.dateLine ? els.dateLine.textContent : state.today);
+    var lines = active.map(function (f) {
+      var text = faltanteDisplayText(f);
+      var qty = String(f.detail || "").trim();
+      return "- " + text + (qty ? " (" + qty + ")" : "");
+    });
+    var out = active.length ? header + "\n" + lines.join("\n") : header + "\n(sin faltantes)";
+    copyToClipboard(out);
+    flashCopied();
+  }
+
+  function copyToClipboard(text) {
+    try {
+      if (window.navigator && navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text);
+        return;
+      }
+    } catch (error) {}
+    try {
+      var area = document.createElement("textarea");
+      area.value = text;
+      area.style.position = "fixed";
+      area.style.opacity = "0";
+      document.body.appendChild(area);
+      area.focus();
+      area.select();
+      document.execCommand("copy");
+      document.body.removeChild(area);
+    } catch (error) {}
+  }
+
+  function flashCopied() {
+    var btn = els.faltantesView.querySelector(".faltante-copy");
+    if (!btn) return;
+    var previous = btn.innerHTML;
+    btn.innerHTML = icon("check") + (state.faltantesLang === "en" ? "Copied" : "¡Copiado!");
+    setTimeout(function () {
+      if (btn) btn.innerHTML = previous;
+    }, 1500);
+  }
+
   function render() {
     renderAddTaskAccess();
     renderSummary();
-    renderTasks();
+    renderView();
     if (state.managerOpen) renderManager();
+  }
+
+  function renderView() {
+    var isFaltantes = state.filter === "faltantes";
+    if (els.taskList) els.taskList.hidden = isFaltantes;
+    if (els.faltantesView) els.faltantesView.hidden = !isFaltantes;
+    if (isFaltantes) renderFaltantes();
+    else renderTasks();
   }
 
   function renderAddTaskAccess() {
     if (!els.addFab) return;
-    els.addFab.hidden = !canAddTasks();
+    els.addFab.hidden = !canAddTasks() || state.filter === "faltantes";
   }
 
   function renderSummary() {
@@ -634,6 +1018,11 @@
     els.pendingCount.textContent = counts.pending;
     els.activeCount.textContent = counts.active;
     els.doneCount.textContent = counts.done;
+    if (els.faltantesCount) {
+      els.faltantesCount.textContent = state.faltantes.filter(function (f) {
+        return f.status !== "done";
+      }).length;
+    }
   }
 
   function renderTasks() {
@@ -662,7 +1051,11 @@
       clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 1.8"/>',
       users: '<circle cx="9" cy="8" r="3.2"/><path d="M3.5 19.5c0-3 2.5-4.8 5.5-4.8s5.5 1.8 5.5 4.8"/><path d="M16 5.2a3.2 3.2 0 0 1 0 6.2"/><path d="M20.5 19.5c0-2.4-1.4-3.9-3.6-4.5"/>',
       note: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6"/><path d="M9 17h5"/>',
-      message: '<path d="M21 11.5a7.5 7.5 0 0 1-10.8 6.7L4 20l1.3-4.2A7.5 7.5 0 1 1 21 11.5z"/>'
+      message: '<path d="M21 11.5a7.5 7.5 0 0 1-10.8 6.7L4 20l1.3-4.2A7.5 7.5 0 1 1 21 11.5z"/>',
+      plus: '<path d="M12 5v14"/><path d="M5 12h14"/>',
+      copy: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/>',
+      circle: '<circle cx="12" cy="12" r="8.5"/>',
+      check: '<circle cx="12" cy="12" r="8.5"/><path d="M8.5 12.4l2.4 2.4 4.6-5"/>'
     };
     return '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (paths[name] || "") + "</svg>";
   }
