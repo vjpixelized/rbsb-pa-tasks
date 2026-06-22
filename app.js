@@ -104,6 +104,18 @@
     "extension": "extension cord",
     "extensión": "extension cord"
   };
+  var FALTANTE_DEPTS = ["Producción", "Cast", "Arte", "Audio", "Cámara", "Lighting", "Grip", "General", "Otro"];
+  var DEPT_EN = {
+    "Producción": "Production",
+    "Cast": "Cast",
+    "Arte": "Art",
+    "Audio": "Audio",
+    "Cámara": "Camera",
+    "Lighting": "Lighting",
+    "Grip": "Grip",
+    "General": "General",
+    "Otro": "Other"
+  };
 
   var state = {
     today: todayKey(),
@@ -196,6 +208,8 @@
     els.faltanteCoordTools = document.getElementById("faltanteCoordTools");
     els.faltanteForm = document.getElementById("faltanteForm");
     els.faltanteText = document.getElementById("faltanteText");
+    els.faltanteDept = document.getElementById("faltanteDept");
+    els.faltanteReqBy = document.getElementById("faltanteReqBy");
   }
 
   function bindEvents() {
@@ -720,14 +734,14 @@
     writeStorage(faltanteStorageKey(), JSON.stringify(state.faltantes));
   }
 
-  async function insertFaltante(text) {
+  async function insertFaltante(text, dept, reqBy) {
     var item = normalizeTask({
       id: makeLocalId(),
       work_date: state.today,
       fixed_key: FALTANTE_KEY,
       title: text,
-      area: "Faltante",
-      detail: "",
+      area: dept || "General",
+      detail: reqBy || "",
       status: "pending",
       assignee: "",
       notes: "",
@@ -794,9 +808,12 @@
       els.faltanteText.focus();
       return;
     }
+    var dept = els.faltanteDept ? els.faltanteDept.value : "General";
+    var reqBy = els.faltanteReqBy ? els.faltanteReqBy.value.trim() : "";
 
-    await insertFaltante(text);
+    await insertFaltante(text, dept, reqBy);
     els.faltanteText.value = "";
+    if (els.faltanteReqBy) els.faltanteReqBy.value = "";
     els.faltanteText.focus();
     flashAdded();
   }
@@ -825,6 +842,30 @@
     if (en) en.classList.toggle("active", state.faltantesLang === "en");
   }
 
+  function deptKey(f) {
+    var area = String(f.area || "").trim();
+    return FALTANTE_DEPTS.indexOf(area) !== -1 ? area : "General";
+  }
+
+  function deptLabel(dept) {
+    if (state.faltantesLang === "en") return DEPT_EN[dept] || dept;
+    return dept;
+  }
+
+  function groupFaltantes() {
+    var groups = {};
+    state.faltantes.forEach(function (f) {
+      var key = deptKey(f);
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(f);
+    });
+    return FALTANTE_DEPTS.filter(function (dept) {
+      return groups[dept];
+    }).map(function (dept) {
+      return { dept: dept, items: groups[dept] };
+    });
+  }
+
   function renderFaltantesList() {
     if (!els.faltantesList) return;
 
@@ -844,11 +885,15 @@
       return;
     }
 
-    html += '<div class="faltante-list">';
-    state.faltantes.forEach(function (f) {
-      html += renderFaltanteRow(f);
+    groupFaltantes().forEach(function (group) {
+      html += '<div class="faltante-group">';
+      html += '<div class="faltante-dept">' + escapeHtml(deptLabel(group.dept)) + " <span>" + group.items.length + "</span></div>";
+      html += '<div class="faltante-list">';
+      group.items.forEach(function (f) {
+        html += renderFaltanteRow(f);
+      });
+      html += "</div></div>";
     });
-    html += "</div>";
 
     els.faltantesList.innerHTML = html;
   }
@@ -862,10 +907,21 @@
   }
 
   function renderFaltanteRow(f) {
+    var en = state.faltantesLang === "en";
+    var requester = String(f.detail || "").trim();
+    var reporter = firstName(f.created_by);
+    var sub;
+    if (requester) {
+      sub = (en ? "Requested by: " : "Solicitó: ") + requester + (reporter ? " · " + (en ? "by " : "por ") + reporter : "");
+    } else {
+      sub = reporter ? (en ? "by " : "por ") + reporter : "";
+    }
     return [
       '<div class="faltante-row">',
+      '<div class="faltante-main">',
       '<span class="faltante-item">' + escapeHtml(faltanteDisplayText(f)) + "</span>",
-      '<span class="faltante-who">' + escapeHtml(firstName(f.created_by)) + "</span>",
+      sub ? '<span class="faltante-sub">' + escapeHtml(sub) + "</span>" : "",
+      "</div>",
       '<button type="button" class="faltante-del" data-fact="delete" data-id="' + escapeHtml(f.id) + '" aria-label="Eliminar faltante">' + icon("trash") + "</button>",
       "</div>"
     ].join("");
@@ -942,12 +998,27 @@
   }
 
   function copyFaltantes() {
-    var header = "FALTANTES — " + (els.dateLine ? els.dateLine.textContent : state.today);
-    var lines = state.faltantes.map(function (f) {
-      return "- " + faltanteDisplayText(f);
+    var en = state.faltantesLang === "en";
+    var dateStr = els.dateLine ? els.dateLine.textContent : state.today;
+    var header = (en ? "MISSING ITEMS — " : "FALTANTES — ") + dateStr;
+    var groups = groupFaltantes();
+
+    if (!groups.length) {
+      copyToClipboard(header + "\n" + (en ? "(none)" : "(sin faltantes)"));
+      flashCopied();
+      return;
+    }
+
+    var label = en ? "requested by" : "solicitó";
+    var blocks = groups.map(function (group) {
+      var lines = group.items.map(function (f) {
+        var requester = String(f.detail || "").trim();
+        return "- " + faltanteDisplayText(f) + (requester ? " — " + label + ": " + requester : "");
+      });
+      return deptLabel(group.dept).toUpperCase() + "\n" + lines.join("\n");
     });
-    var out = state.faltantes.length ? header + "\n" + lines.join("\n") : header + "\n(sin faltantes)";
-    copyToClipboard(out);
+
+    copyToClipboard(header + "\n\n" + blocks.join("\n\n"));
     flashCopied();
   }
 
