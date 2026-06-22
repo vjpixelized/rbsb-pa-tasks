@@ -123,6 +123,7 @@
     pollTimer: null,
     faltantes: [],
     faltantesLang: "es",
+    faltantesOpen: false,
     translating: false
   };
 
@@ -188,12 +189,13 @@
     els.paNoteModal = document.getElementById("paNoteModal");
     els.paNoteForm = document.getElementById("paNoteForm");
     els.paNoteText = document.getElementById("paNoteText");
-    els.faltantesView = document.getElementById("faltantesView");
-    els.faltantesCount = document.getElementById("faltantesCount");
-    els.faltanteModal = document.getElementById("faltanteModal");
+    els.faltantesBtn = document.getElementById("faltantesBtn");
+    els.faltantesBadge = document.getElementById("faltantesBadge");
+    els.faltantesModal = document.getElementById("faltantesModal");
+    els.faltantesList = document.getElementById("faltantesList");
+    els.faltanteCoordTools = document.getElementById("faltanteCoordTools");
     els.faltanteForm = document.getElementById("faltanteForm");
     els.faltanteText = document.getElementById("faltanteText");
-    els.faltanteQty = document.getElementById("faltanteQty");
   }
 
   function bindEvents() {
@@ -212,11 +214,15 @@
       });
     }
 
+    if (els.faltantesBtn) els.faltantesBtn.addEventListener("click", openFaltantesModal);
     if (els.faltanteForm) els.faltanteForm.addEventListener("submit", handleAddFaltante);
-    if (els.faltantesView) els.faltantesView.addEventListener("click", handleFaltantesAction);
-    if (els.faltanteModal) {
-      els.faltanteModal.addEventListener("click", function (event) {
-        if (event.target === els.faltanteModal) closeModal("faltanteModal");
+    if (els.faltantesModal) {
+      els.faltantesModal.addEventListener("click", function (event) {
+        if (event.target === els.faltantesModal) {
+          closeModal("faltantesModal");
+          return;
+        }
+        handleFaltantesAction(event);
       });
     }
 
@@ -703,7 +709,7 @@
     }
 
     renderSummary();
-    if (state.filter === "faltantes") renderFaltantes();
+    if (state.faltantesOpen) renderFaltantesList();
   }
 
   function faltanteStorageKey() {
@@ -714,14 +720,14 @@
     writeStorage(faltanteStorageKey(), JSON.stringify(state.faltantes));
   }
 
-  async function insertFaltante(text, qty) {
+  async function insertFaltante(text) {
     var item = normalizeTask({
       id: makeLocalId(),
       work_date: state.today,
       fixed_key: FALTANTE_KEY,
       title: text,
       area: "Faltante",
-      detail: qty,
+      detail: "",
       status: "pending",
       assignee: "",
       notes: "",
@@ -746,21 +752,21 @@
     await loadFaltantes();
   }
 
-  async function patchFaltante(id, patch) {
-    patch.updated_at = nowIso();
+  async function deleteFaltante(id) {
     if (state.client) {
-      var result = await state.client.from(state.table).update(patch).eq("id", id);
+      var result = await state.client.from(state.table).delete().eq("id", id);
       if (result.error) {
         console.error(result.error);
+        alert("No se pudo eliminar.");
         return;
       }
       await loadFaltantes();
     } else {
-      state.faltantes = state.faltantes.map(function (f) {
-        return f.id === id ? normalizeTask(Object.assign({}, f, patch)) : f;
+      state.faltantes = state.faltantes.filter(function (f) {
+        return f.id !== id;
       });
       saveLocalFaltantes();
-      renderFaltantes();
+      renderFaltantesList();
     }
   }
 
@@ -788,70 +794,63 @@
       els.faltanteText.focus();
       return;
     }
-    var qty = els.faltanteQty.value.trim();
 
-    await insertFaltante(text, qty);
+    await insertFaltante(text);
     els.faltanteText.value = "";
-    els.faltanteQty.value = "";
-    closeModal("faltanteModal");
-    showNotice("Faltante reportado: " + text);
+    els.faltanteText.focus();
+    flashAdded();
   }
 
-  function openFaltanteModal() {
+  function openFaltantesModal() {
     if (!requirePa()) return;
-    openModal("faltanteModal");
+    state.faltantesOpen = true;
+    openModal("faltantesModal");
+    renderFaltantesPanel();
     setTimeout(function () {
-      els.faltanteText.focus();
+      if (els.faltanteText) els.faltanteText.focus();
     }, 40);
   }
 
-  function renderFaltantes() {
-    if (!els.faltantesView) return;
+  function renderFaltantesPanel() {
+    if (els.faltanteCoordTools) els.faltanteCoordTools.hidden = !canManageTasks();
+    updateLangButtons();
+    renderFaltantesList();
+  }
 
-    var html = '<button type="button" class="faltante-report" data-fact="report">' + icon("plus") + "Reportar faltante</button>";
+  function updateLangButtons() {
+    if (!els.faltantesModal) return;
+    var es = els.faltantesModal.querySelector('[data-fact="lang-es"]');
+    var en = els.faltantesModal.querySelector('[data-fact="lang-en"]');
+    if (es) es.classList.toggle("active", state.faltantesLang === "es");
+    if (en) en.classList.toggle("active", state.faltantesLang === "en");
+  }
+
+  function renderFaltantesList() {
+    if (!els.faltantesList) return;
 
     if (!canManageTasks()) {
-      html += '<div class="faltante-note">Lo que reportes lo revisan los coordinadores.</div>';
-      els.faltantesView.innerHTML = html;
+      els.faltantesList.innerHTML = '<div class="faltante-note">Lo que reportes lo revisan los coordinadores.</div>';
       return;
     }
 
-    var en = state.faltantesLang === "en";
-    var active = state.faltantes.filter(function (f) {
-      return f.status !== "done";
-    });
-    var resolved = state.faltantes.filter(function (f) {
-      return f.status === "done";
-    });
-
-    html += '<div class="faltante-controls">';
-    html += '<div class="lang-toggle">';
-    html += '<button type="button" class="lang-btn' + (en ? "" : " active") + '" data-fact="lang-es">ES</button>';
-    html += '<button type="button" class="lang-btn' + (en ? " active" : "") + '" data-fact="lang-en">EN</button>';
-    html += "</div>";
-    html += '<button type="button" class="faltante-copy" data-fact="copy">' + icon("copy") + (en ? "Copy list" : "Copiar lista") + "</button>";
-    html += "</div>";
-
+    var html = "";
     if (state.translating) {
       html += '<div class="faltante-note">Traduciendo…</div>';
     }
 
-    if (!active.length && !resolved.length) {
+    if (!state.faltantes.length) {
       html += '<div class="empty-state">No hay faltantes hoy.</div>';
-      els.faltantesView.innerHTML = html;
+      els.faltantesList.innerHTML = html;
       return;
     }
 
     html += '<div class="faltante-list">';
-    active.forEach(function (f) {
-      html += renderFaltanteRow(f, false);
-    });
-    resolved.forEach(function (f) {
-      html += renderFaltanteRow(f, true);
+    state.faltantes.forEach(function (f) {
+      html += renderFaltanteRow(f);
     });
     html += "</div>";
 
-    els.faltantesView.innerHTML = html;
+    els.faltantesList.innerHTML = html;
   }
 
   function faltanteDisplayText(f) {
@@ -862,13 +861,12 @@
     return f.title;
   }
 
-  function renderFaltanteRow(f, resolved) {
-    var qty = String(f.detail || "").trim();
+  function renderFaltanteRow(f) {
     return [
-      '<div class="faltante-row' + (resolved ? " resolved" : "") + '" data-fact="toggle" data-id="' + escapeHtml(f.id) + '">',
-      '<span class="faltante-check">' + icon(resolved ? "check" : "circle") + "</span>",
-      '<span class="faltante-item">' + escapeHtml(faltanteDisplayText(f)) + (qty ? ' <span class="faltante-qty">· ' + escapeHtml(qty) + "</span>" : "") + "</span>",
+      '<div class="faltante-row">',
+      '<span class="faltante-item">' + escapeHtml(faltanteDisplayText(f)) + "</span>",
       '<span class="faltante-who">' + escapeHtml(firstName(f.created_by)) + "</span>",
+      '<button type="button" class="faltante-del" data-fact="delete" data-id="' + escapeHtml(f.id) + '" aria-label="Eliminar faltante">' + icon("trash") + "</button>",
       "</div>"
     ].join("");
   }
@@ -882,43 +880,38 @@
     if (!el) return;
     var fact = el.dataset.fact;
 
-    if (fact === "report") {
-      openFaltanteModal();
-      return;
-    }
     if (fact === "lang-es") {
       state.faltantesLang = "es";
-      renderFaltantes();
+      updateLangButtons();
+      renderFaltantesList();
       return;
     }
     if (fact === "lang-en") {
       await ensureTranslations();
       state.faltantesLang = "en";
-      renderFaltantes();
+      updateLangButtons();
+      renderFaltantesList();
       return;
     }
     if (fact === "copy") {
       copyFaltantes();
       return;
     }
-    if (fact === "toggle") {
+    if (fact === "delete") {
       if (!canManageTasks()) return;
-      var target = state.faltantes.find(function (f) {
-        return f.id === el.dataset.id;
-      });
-      if (!target) return;
-      await patchFaltante(target.id, { status: target.status === "done" ? "pending" : "done" });
+      if (!confirm("¿Eliminar este faltante?")) return;
+      await deleteFaltante(el.dataset.id);
     }
   }
 
   async function ensureTranslations() {
     var pending = state.faltantes.filter(function (f) {
-      return f.status !== "done" && !String(f.notes || "").trim();
+      return !String(f.notes || "").trim();
     });
     if (!pending.length) return;
 
     state.translating = true;
-    renderFaltantes();
+    renderFaltantesList();
 
     for (var i = 0; i < pending.length; i++) {
       var en = await translateText(pending[i].title);
@@ -949,16 +942,11 @@
   }
 
   function copyFaltantes() {
-    var active = state.faltantes.filter(function (f) {
-      return f.status !== "done";
-    });
     var header = "FALTANTES — " + (els.dateLine ? els.dateLine.textContent : state.today);
-    var lines = active.map(function (f) {
-      var text = faltanteDisplayText(f);
-      var qty = String(f.detail || "").trim();
-      return "- " + text + (qty ? " (" + qty + ")" : "");
+    var lines = state.faltantes.map(function (f) {
+      return "- " + faltanteDisplayText(f);
     });
-    var out = active.length ? header + "\n" + lines.join("\n") : header + "\n(sin faltantes)";
+    var out = state.faltantes.length ? header + "\n" + lines.join("\n") : header + "\n(sin faltantes)";
     copyToClipboard(out);
     flashCopied();
   }
@@ -984,7 +972,7 @@
   }
 
   function flashCopied() {
-    var btn = els.faltantesView.querySelector(".faltante-copy");
+    var btn = els.faltantesModal ? els.faltantesModal.querySelector(".faltante-copy") : null;
     if (!btn) return;
     var previous = btn.innerHTML;
     btn.innerHTML = icon("check") + (state.faltantesLang === "en" ? "Copied" : "¡Copiado!");
@@ -993,24 +981,27 @@
     }, 1500);
   }
 
+  function flashAdded() {
+    if (!els.faltanteForm) return;
+    var btn = els.faltanteForm.querySelector('button[type="submit"]');
+    if (!btn) return;
+    var previous = btn.innerHTML;
+    btn.innerHTML = icon("check") + "Agregado";
+    setTimeout(function () {
+      if (btn) btn.innerHTML = previous;
+    }, 1200);
+  }
+
   function render() {
     renderAddTaskAccess();
     renderSummary();
-    renderView();
+    renderTasks();
     if (state.managerOpen) renderManager();
-  }
-
-  function renderView() {
-    var isFaltantes = state.filter === "faltantes";
-    if (els.taskList) els.taskList.hidden = isFaltantes;
-    if (els.faltantesView) els.faltantesView.hidden = !isFaltantes;
-    if (isFaltantes) renderFaltantes();
-    else renderTasks();
   }
 
   function renderAddTaskAccess() {
     if (!els.addFab) return;
-    els.addFab.hidden = !canAddTasks() || state.filter === "faltantes";
+    els.addFab.hidden = !canAddTasks();
   }
 
   function renderSummary() {
@@ -1018,10 +1009,10 @@
     els.pendingCount.textContent = counts.pending;
     els.activeCount.textContent = counts.active;
     els.doneCount.textContent = counts.done;
-    if (els.faltantesCount) {
-      els.faltantesCount.textContent = state.faltantes.filter(function (f) {
-        return f.status !== "done";
-      }).length;
+    if (els.faltantesBadge) {
+      var n = state.faltantes.length;
+      els.faltantesBadge.textContent = n;
+      els.faltantesBadge.hidden = n === 0;
     }
   }
 
@@ -1055,7 +1046,8 @@
       plus: '<path d="M12 5v14"/><path d="M5 12h14"/>',
       copy: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/>',
       circle: '<circle cx="12" cy="12" r="8.5"/>',
-      check: '<circle cx="12" cy="12" r="8.5"/><path d="M8.5 12.4l2.4 2.4 4.6-5"/>'
+      check: '<circle cx="12" cy="12" r="8.5"/><path d="M8.5 12.4l2.4 2.4 4.6-5"/>',
+      trash: '<path d="M4 7h16"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/><path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12"/><path d="M10 11v6"/><path d="M14 11v6"/>'
     };
     return '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (paths[name] || "") + "</svg>";
   }
@@ -1670,6 +1662,7 @@
 
   function closeModal(id) {
     if (id === "paModal" && !state.currentPa) return;
+    if (id === "faltantesModal") state.faltantesOpen = false;
     var modal = document.getElementById(id);
     modal.classList.remove("show");
     modal.setAttribute("aria-hidden", "true");
