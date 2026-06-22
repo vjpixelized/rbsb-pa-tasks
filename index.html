@@ -14,7 +14,7 @@
       }
     } catch (error) {}
   </script>
-  <link rel="stylesheet" href="./styles.css?v=20260621-5">
+  <link rel="stylesheet" href="./styles.css?v=20260621-6">
   <link rel="stylesheet" href="./theme.css?v=20260621-2">
 </head>
 <body>
@@ -137,6 +137,20 @@
       </div>
       <form id="faltanteForm" class="faltante-add">
         <input id="faltanteText" type="text" autocomplete="off" placeholder="¿Qué falta? Ej. servilletas, hielo">
+        <div class="faltante-add-row">
+          <select id="faltanteDept" aria-label="Departamento">
+            <option>Producción</option>
+            <option>Cast</option>
+            <option>Arte</option>
+            <option>Audio</option>
+            <option>Cámara</option>
+            <option>Lighting</option>
+            <option>Grip</option>
+            <option selected>General</option>
+            <option>Otro</option>
+          </select>
+          <input id="faltanteReqBy" type="text" autocomplete="off" placeholder="Solicitado por (opcional)">
+        </div>
         <button type="submit">Agregar</button>
       </form>
       <div id="faltanteCoordTools" class="faltante-controls" hidden>
@@ -210,7 +224,7 @@
   </div>
 
   <script src="./supabase-config.js?v=20260618-1"></script>
-  <script src="./app.js?v=20260621-5"></script>
+  <script src="./app.js?v=20260621-6"></script>
   <script>
     (function () {
       var key = "rbsb-pa-theme";
