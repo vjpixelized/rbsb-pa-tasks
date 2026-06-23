@@ -121,6 +121,7 @@
 
   var state = {
     today: todayKey(),
+    viewDate: todayKey(),
     tasks: [],
     filter: "pending",
     currentPa: readStorage(PA_STORAGE_KEY, ""),
@@ -153,6 +154,7 @@
     }
     bindEvents();
     renderDate();
+    updateDateNav();
     renderPa();
     renderPaList();
     await initBackend();
@@ -169,6 +171,9 @@
 
   function cacheElements() {
     els.dateLine = document.getElementById("dateLine");
+    els.prevDay = document.getElementById("prevDay");
+    els.nextDay = document.getElementById("nextDay");
+    els.todayBtn = document.getElementById("todayBtn");
     els.currentPa = document.getElementById("currentPa");
     els.paButton = document.getElementById("paButton");
     els.paModal = document.getElementById("paModal");
@@ -220,6 +225,9 @@
     });
 
     els.refreshBtn.addEventListener("click", refreshAll);
+    if (els.prevDay) els.prevDay.addEventListener("click", function () { changeViewDate(-1); });
+    if (els.nextDay) els.nextDay.addEventListener("click", function () { changeViewDate(1); });
+    if (els.todayBtn) els.todayBtn.addEventListener("click", goToday);
     els.addTaskForm.addEventListener("submit", handleAddTask);
     els.taskList.addEventListener("click", handleTaskAction);
 
@@ -349,7 +357,7 @@
       var result = await state.client
         .from(state.table)
         .select("*")
-        .eq("work_date", state.today)
+        .eq("work_date", state.viewDate)
         .is("fixed_key", null)
         .order("created_at", { ascending: true });
 
@@ -459,7 +467,7 @@
 
     var task = normalizeTask({
       id: makeLocalId(),
-      work_date: state.today,
+      work_date: state.viewDate,
       fixed_key: null,
       title: title,
       area: els.newTaskArea.value || "General",
@@ -707,7 +715,7 @@
       var result = await state.client
         .from(state.table)
         .select("*")
-        .eq("work_date", state.today)
+        .eq("work_date", state.viewDate)
         .like("fixed_key", FALTANTE_KEY + "%")
         .order("created_at", { ascending: true });
 
@@ -729,7 +737,7 @@
   }
 
   function faltanteStorageKey() {
-    return STORAGE_PREFIX + ":faltantes:" + state.today;
+    return STORAGE_PREFIX + ":faltantes:" + state.viewDate;
   }
 
   function saveLocalFaltantes() {
@@ -741,7 +749,7 @@
     var uniqueKey = FALTANTE_KEY + ":" + localId;
     var item = normalizeTask({
       id: localId,
-      work_date: state.today,
+      work_date: state.viewDate,
       fixed_key: uniqueKey,
       title: text,
       area: dept || "General",
@@ -833,6 +841,7 @@
   }
 
   function renderFaltantesPanel() {
+    if (els.faltanteForm) els.faltanteForm.hidden = !isViewingToday();
     if (els.faltanteCoordTools) els.faltanteCoordTools.hidden = !canManageTasks();
     updateLangButtons();
     renderFaltantesList();
@@ -1076,7 +1085,7 @@
 
   function renderAddTaskAccess() {
     if (!els.addFab) return;
-    els.addFab.hidden = !canAddTasks();
+    els.addFab.hidden = !canAddTasks() || !isViewingToday();
   }
 
   function renderSummary() {
@@ -1638,7 +1647,44 @@
       day: "numeric",
       month: "long"
     });
-    els.dateLine.textContent = formatter.format(new Date());
+    els.dateLine.textContent = formatter.format(new Date(state.viewDate + "T00:00:00"));
+  }
+
+  function addDays(dateStr, n) {
+    var d = new Date(dateStr + "T00:00:00");
+    d.setDate(d.getDate() + n);
+    var month = String(d.getMonth() + 1).padStart(2, "0");
+    var day = String(d.getDate()).padStart(2, "0");
+    return d.getFullYear() + "-" + month + "-" + day;
+  }
+
+  function isViewingToday() {
+    return state.viewDate === state.today;
+  }
+
+  function changeViewDate(delta) {
+    var next = addDays(state.viewDate, delta);
+    if (delta > 0 && next > state.today) return;
+    state.viewDate = next;
+    afterDateChange();
+  }
+
+  function goToday() {
+    if (state.viewDate === state.today) return;
+    state.viewDate = state.today;
+    afterDateChange();
+  }
+
+  function afterDateChange() {
+    renderDate();
+    updateDateNav();
+    refreshAll();
+    if (state.faltantesOpen) renderFaltantesPanel();
+  }
+
+  function updateDateNav() {
+    if (els.todayBtn) els.todayBtn.hidden = isViewingToday();
+    if (els.nextDay) els.nextDay.disabled = isViewingToday();
   }
 
   function saveLocalTasks() {
@@ -1646,7 +1692,7 @@
   }
 
   function storageKey() {
-    return STORAGE_PREFIX + ":" + state.today;
+    return STORAGE_PREFIX + ":" + state.viewDate;
   }
 
   function todayKey() {

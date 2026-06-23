@@ -23,7 +23,12 @@
       <div class="title-block">
         <p class="eyebrow">Hacienda</p>
         <h1>PA Tasks</h1>
-        <p id="dateLine" class="date-line">Cargando...</p>
+        <div class="date-nav">
+          <button id="prevDay" class="date-arrow" type="button" aria-label="Día anterior">‹</button>
+          <p id="dateLine" class="date-line">Cargando...</p>
+          <button id="nextDay" class="date-arrow" type="button" aria-label="Día siguiente">›</button>
+          <button id="todayBtn" class="today-btn" type="button" hidden>Hoy</button>
+        </div>
       </div>
       <div class="top-actions">
         <button id="faltantesBtn" class="icon-btn faltantes-btn" type="button" aria-label="Faltantes" title="Faltantes">
@@ -67,7 +72,7 @@
         <div class="manager-head">
           <div>
             <p id="managerEyebrow" class="eyebrow">Coordinador</p>
-            <h2>Resultados de hoy</h2>
+            <h2>Resultados del día</h2>
           </div>
           <button id="managerCloseBtn" class="plain-btn" type="button">Cerrar</button>
         </div>
@@ -224,7 +229,7 @@
   </div>
 
   <script src="./supabase-config.js?v=20260618-1"></script>
-  <script src="./app.js?v=20260621-8"></script>
+  <script src="./app.js?v=20260621-9"></script>
   <script>
     (function () {
       var key = "rbsb-pa-theme";
