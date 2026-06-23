@@ -736,6 +736,69 @@ textarea:focus {
   opacity: 1;
 }
 
+.faltante-tools {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.faltante-tools[hidden] {
+  display: none;
+}
+
+.faltante-tools .faltante-controls {
+  margin-top: 0;
+}
+
+.faltante-clear {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid rgba(180, 35, 24, 0.4);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--danger);
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+
+.faltante-clear:hover {
+  background: rgba(180, 35, 24, 0.08);
+}
+
+.manager-datebar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.mgr-date-label {
+  flex: 1;
+  min-width: 0;
+  color: var(--ink);
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.mgr-total-btn {
+  flex: 0 0 auto;
+  min-height: 32px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.mgr-total-btn.active {
+  border-color: var(--brand);
+  background: var(--brand);
+  color: var(--on-brand);
+}
+
 .task-card {
   border: 1px solid var(--line);
   border-radius: var(--radius);
