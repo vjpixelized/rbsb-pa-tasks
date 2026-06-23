@@ -14,7 +14,7 @@
       }
     } catch (error) {}
   </script>
-  <link rel="stylesheet" href="./styles.css?v=20260621-6">
+  <link rel="stylesheet" href="./styles.css?v=20260621-10">
   <link rel="stylesheet" href="./theme.css?v=20260621-2">
 </head>
 <body>
@@ -23,12 +23,7 @@
       <div class="title-block">
         <p class="eyebrow">Hacienda</p>
         <h1>PA Tasks</h1>
-        <div class="date-nav">
-          <button id="prevDay" class="date-arrow" type="button" aria-label="Día anterior">‹</button>
-          <p id="dateLine" class="date-line">Cargando...</p>
-          <button id="nextDay" class="date-arrow" type="button" aria-label="Día siguiente">›</button>
-          <button id="todayBtn" class="today-btn" type="button" hidden>Hoy</button>
-        </div>
+        <p id="dateLine" class="date-line">Cargando...</p>
       </div>
       <div class="top-actions">
         <button id="faltantesBtn" class="icon-btn faltantes-btn" type="button" aria-label="Faltantes" title="Faltantes">
@@ -72,9 +67,15 @@
         <div class="manager-head">
           <div>
             <p id="managerEyebrow" class="eyebrow">Coordinador</p>
-            <h2>Resultados del día</h2>
+            <h2>Resultados</h2>
           </div>
           <button id="managerCloseBtn" class="plain-btn" type="button">Cerrar</button>
+        </div>
+        <div class="manager-datebar">
+          <button id="mgrPrev" class="date-arrow" type="button" aria-label="Día anterior">‹</button>
+          <span id="mgrDateLabel" class="mgr-date-label">Hoy</span>
+          <button id="mgrNext" class="date-arrow" type="button" aria-label="Día siguiente">›</button>
+          <button id="mgrTotal" class="mgr-total-btn" type="button">Total</button>
         </div>
         <div id="managerContent"></div>
       </section>
@@ -158,12 +159,15 @@
         </div>
         <button type="submit">Agregar</button>
       </form>
-      <div id="faltanteCoordTools" class="faltante-controls" hidden>
-        <div class="lang-toggle">
-          <button type="button" class="lang-btn active" data-fact="lang-es">ES</button>
-          <button type="button" class="lang-btn" data-fact="lang-en">EN</button>
+      <div id="faltanteCoordTools" class="faltante-tools" hidden>
+        <div class="faltante-controls">
+          <div class="lang-toggle">
+            <button type="button" class="lang-btn active" data-fact="lang-es">ES</button>
+            <button type="button" class="lang-btn" data-fact="lang-en">EN</button>
+          </div>
+          <button type="button" class="faltante-copy" data-fact="copy">Copiar lista</button>
         </div>
-        <button type="button" class="faltante-copy" data-fact="copy">Copiar lista</button>
+        <button type="button" class="faltante-clear" data-fact="clear-all">Borrar todo</button>
       </div>
       <div id="faltantesList" class="faltantes-view"></div>
     </div>
@@ -229,7 +233,7 @@
   </div>
 
   <script src="./supabase-config.js?v=20260618-1"></script>
-  <script src="./app.js?v=20260621-9"></script>
+  <script src="./app.js?v=20260621-10"></script>
   <script>
     (function () {
       var key = "rbsb-pa-theme";
